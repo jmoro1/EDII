@@ -1,0 +1,2 @@
+Práctica 2 de EDII - UNSAM
+Ejercitación de C y punteros, struct y union.
