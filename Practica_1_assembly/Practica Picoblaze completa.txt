@@ -1,0 +1,192 @@
+
+Ej_01 ****************************
+
+address 0
+
+start:
+   load   s2, 15 ; 0001 0101
+   output s2, 0  ; puerto 0 para los leds
+
+
+
+Ej_02 **********************************
+
+address 0
+
+start:
+   load   s1, 1
+   load   s2, 1
+   ADD    s1, s2
+   output s1, 1
+
+
+Ej_03 **********************************
+
+address 0
+
+start:
+   load   s1, 10 ; 0001 0000  (16)d
+   load   s2, 10 ; 0001 0000  (16)d
+   ADD    s1, s2 ; 0010 0000  ()d
+   output s1, 1
+
+EJ 4:*************************************
+
+address 0
+
+start:
+   input s0, 1; pongo en el registro s0 lo que ingreso por el input 1
+   load   s1, 02 ; 0000 0010  cargo en el registro s1 el numero 02
+   output s1, 0
+   START_LOOP:
+    RL S1
+    SUB s0,1
+    JUMP Z, EXIT_LOOP
+    JUMP START_LOOP
+   EXIT_LOOP:
+   output s1, 0
+
+EJ5************************************
+address 0
+
+start:
+   load   s0, 01 ;0000 0001  cargo en el registro s0 el numero 01
+   load   s1, 03 ; 0000 0011  cargo en el registro s1 el numero 03
+   load   s2, 04 ; inicializo en cualquiera
+   START_LOOP:
+    COMPARE s0, s1
+    JUMP Z, equal
+    load   s2, 00
+    JUMP END
+   equal:
+   load   s2, 01
+
+END:
+
+EJ6************************************
+address 0
+
+start:
+   load   s0, 03 ; 0000 0011  cargo en el registro s0 el numero 03
+   load   s1, 04 ; 0000 0100  cargo en el registro s1 el numero 04
+   load   s2, s0 ; inicializo en cualquiera
+  START_LOOP:
+    SUB s1,1
+    JUMP Z, END
+    ADD s0, s2
+    JUMP START_LOOP
+
+END: 
+output s0, 1
+
+JUMP END
+
+EJ7************************************
+
+address 0
+
+
+start:
+   load   s1, 81  ; Cargar el valor binario 1000 0001 en s1
+   load   s2, 00  ; Inicializar s2 con 0000 0000 para la suma de unos
+   load   s3, 01  ; Inicializar s3 con 0000 0001 para el auxiliar que recorre
+   load   s4, 80  ; Mascara para saber si me encuentro en el ultimo bit 1000 0000
+
+
+start_loop:
+    output s3,0
+    TEST s3, s4  ; Verificar que s3 sea el último bit (máscara 1000 0000)
+    JUMP NZ, ultimobit   ; Si el último bit ya ha sido recorrido, finalizar
+    TEST s1, s3  ; Probar el bit actual de s1 utilizando s3 como máscara
+    JUMP NZ, sumar   ; Saltar a sumar si el resultado es 0 (bit actual es 1)
+    JUMP Z, no_sumar
+
+no_sumar:
+    ADD  s3, s3  ; Avanzar el bit actual en s3
+    JUMP start_loop
+
+sumar:
+    ADD    s2, 1   ; Incrementar el contador s2
+    ADD    s3, s3  ; Avanzar el bit actual en s3
+    JUMP start_loop   ; Si no se ha llegado al último bit, volver al inicio del bucle
+
+ultimobit:
+    TEST s1, s3
+    JUMP Z, END
+    ADD    s2, 1   ; Incrementar el contador s2
+    JUMP END
+
+END: 
+output s2,1
+output s2,0
+JUMP END   ; Finalizar el programa
+
+
+EJ8************************************
+
+address 0
+
+start:
+   load   s1, 22 ; Cargar un valor en s1 (por ejemplo, 0010 0010)
+   load   s2, 00 ; Inicializar s2 con 0000 0000 para el resultado intercambiado
+   load   s3, 01 ; Inicializar s3 con 0000 0001 para el auxiliar que recorre hacia adelante
+   load   s4, 80 ; Inicializar s4 con 1000 0000 para el auxiliar que recorre hacia atrás
+   load   s5, 80 ; Inicializar s5 con 1000 0000 mascara para comparar
+
+swap_loop:
+    output s3,0
+    TEST s3, s5          ; Verificar que s3 sea el último bit (máscara 1000 0000)
+    JUMP NZ, ultimobit   ; Si es el ultimo bit analizarlo como tal
+    TEST s1, s3          ; Probar el bit actual de s1 utilizando s3 como máscara
+    JUMP NZ, swap_bits   ; Saltar a swap
+    JUMP Z, no_swap      ; Saltar a no_swap
+    
+swap_bits:
+    ADD    s2, s4   ; Agregar el valor de s4 a s2 (establece el bit correspondiente en s2)
+    ADD    s3, s3   ; Avanzar al siguiente bit en s3
+    SRA    s4       ; Retroceder al bit anterior en s4
+    JUMP swap_loop  ; Volver al inicio del bucle
+
+no_swap:
+    ADD    s3, s3   ; Avanzar al siguiente bit en s3
+    SRA    s4       ; Retroceder al bit anterior en s4
+    JUMP swap_loop  ; Volver al inicio del bucle
+
+ultimobit:
+    TEST s1, s3   ; Probar el bit actual de s1 utilizando s3 como máscara
+    JUMP Z, END
+    ADD  s2, s4   ; Agregar el último bit en s4 a s2 (establecerlo en s2)
+    JUMP END
+
+END: 
+    ; Al finalizar el bucle, s2 contendrá el valor de s1 con las posiciones intercambiadas
+    ; Puedes hacer lo que necesites con el valor intercambiado en s2
+    output s2,0
+    JUMP END   ; Finalizar el programa
+
+ESTOS SON LOS RESULTADOS QUE SE VISUALIZAN:
+
+| Original | Invertido | BCD Original | BCD Invertido |
+|----------|-----------|--------------|---------------|
+| 00       | 00        | 0000         | 0000          |
+| 80       | 01        | 1000         | 0001          |
+| 40       | 02        | 0100         | 0010          |
+| C0       | 03        | 1100         | 0011          |
+| 20       | 04        | 0010         | 0100          |
+| A0       | 05        | 1010         | 0101          |
+| 60       | 06        | 0110         | 0110          |
+| E0       | 07        | 1110         | 0111          |
+| 10       | 08        | 0001         | 1000          |
+| 90       | 09        | 1001         | 1001          |
+| 50       | 0A        | 0101         | 1010          |
+| D0       | 0B        | 1101         | 1011          |
+| 30       | 0C        | 0011         | 1100          |
+| B0       | 0D        | 1011         | 1101          |
+| 70       | 0E        | 0111         | 1110          |
+| F0       | 0F        | 1111         | 1111          |
+
+
+
+
+
+
