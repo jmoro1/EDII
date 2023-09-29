@@ -43,11 +43,11 @@ int main(void)
     *pCRH |= (0x0 << PC13_MODE_BIT1); //SETEO EL MODE DEL CRH CON 01 MODO OUTPUT MAX 10MHz
     *pCRH |= (0x0 << PC13_CNF_BIT0); 
     *pCRH |= (0x0 << PC13_CNF_BIT1); // SETEO EL CNF DEL CRH CON 00 GENERAL PURPOSE OUTPUT PUSH-PULL
-    *pODR |= (0x0 << PC13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)    (((((((((((((VER SI FUNCA,SINO PONERLO EN 1)))))))))))))
+    *pODR |= (0x0 << PC13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)   
 
 	for(;;){
         for(volatile uint32_t i=0;i<5000000;i++);
-        *pODR ^= (0x1 << PC13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)    (((((((((((((VER SI FUNCA,SINO PONERLO EN 1)))))))))))))
+        *pODR ^= (0x1 << PC13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)   
 
     }
 
