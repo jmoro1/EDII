@@ -1,5 +1,4 @@
-/*1. Implementar un código C de bajo nivel (sin utilizar las funciones de biblioteca) para encender
-el led disponible en la placa.*/
+
 
 typedef int            int32_t;
 typedef short          int16_t;
@@ -24,11 +23,6 @@ typedef unsigned char  uint8_t;
 #define PC13_CNF_BIT1 23
 #define PC13_ODR_BIT 13
 
-
-
-
-
-
 int main(void)
 {
 
@@ -48,16 +42,13 @@ int main(void)
     *pCRH |= (0x1 << PC13_MODE_BIT0); 
     *pCRH |= (0x0 << PC13_MODE_BIT1); //SETEO EL MODE DEL CRH CON 01 MODO OUTPUT MAX 10MHz
     *pCRH |= (0x0 << PC13_CNF_BIT0); 
-    *pCRH |= (0x0 << PC13_CNF_BIT1); // SETEO EL CNF DEL CRH CON 00 GENERAL PURPOSE OUTPUT PUSH-PULL   
+    *pCRH |= (0x0 << PC13_CNF_BIT1); // SETEO EL CNF DEL CRH CON 00 GENERAL PURPOSE OUTPUT PUSH-PULL
+    *pODR |= (0x0 << PC13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)    (((((((((((((VER SI FUNCA,SINO PONERLO EN 1)))))))))))))
 
 	for(;;){
-        
-        *pODR ^= PC13_ODR_BIT; //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA) 
+        for(volatile uint32_t i=0;i<5000000;i++);
+        *pODR ^= (0x1 << PC13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)    (((((((((((((VER SI FUNCA,SINO PONERLO EN 1)))))))))))))
 
-        for(volatile int i=0;i<100000;i++){  //CREO UN RETARDO
-
-        }
-        
     }
 
 	return 0;
