@@ -59,12 +59,11 @@ int main(void)
     *pCRL |= (0x0 << PB13_MODE_BIT1); //SETEO EL MODE DEL CRL CON 00 INPUT MODE
     *pCRL |= (0x1 << PB13_CNF_BIT0); 
     *pCRL |= (0x0 << PB13_CNF_BIT1); // SETEO EL CNF DEL CRL CON 01 FLOATING INPUT (RESET STATE)
-    uint32_t Gpio13IDRMask = (1 << GPIO_IDR_BIT5);
 
 
 
 	for(;;){
-        if((*pIDR & Gpio13IDRMask) != 0 ){ //VEO SI EL BIT 5 DEL IDR DEL PB5 ESTA EN 1
+        if((*pIDR & GPIO_IDR_BIT5) != 0 ){ //VEO SI EL BIT 5 DEL IDR DEL PB5 ESTA EN 1
             *pODR |= (0x0 << PB13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)    (((((((((((((VER SI FUNCA,SINO PONERLO EN 1)))))))))))))
         }else{
             *pODR |= (0x1 << PB13_ODR_BIT); //PONGO EN 0 EL BIT DEL ODR (OUTPUT DATA)    (((((((((((((VER SI FUNCA,SINO PONERLO EN 0)))))))))))))
