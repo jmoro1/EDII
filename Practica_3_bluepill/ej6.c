@@ -69,7 +69,7 @@ int main(void)
     GPIO_C->GPIO_CRH |= ((0x1 << PC13_MODE_BIT0) | (0x0 << PC13_MODE_BIT1) | (0x0 << PC13_CNF_BIT0) | (0x0 << PC13_CNF_BIT1));// LO DE ARRIBA EN UNA LINEA
 
     //EXTRAIGO LOS ULTIMOS 24 BITS DEL REGISTRO DE CALIBRACION (TENMS)
-    uint32_t CalibrationValue_10ms = SysTick->SYST_CALIB & (0xFFFFFF); //RELOAD VALUE PARA 10ms
+    uint32_t CalibrationValue_10ms = SysTick->SYST_CALIB; //RELOAD VALUE PARA 10ms
     uint32_t CalibrationValue_1s = CalibrationValue_10ms *100; //modifico el reload value para tener un tiempo de 1000ms
     //BORRO LOS ULTIMOS 24 BITS DEL REGISTRO DE RELOAD VALUE
     //uint32_t LoadCurrentValue = SysTick->SYST_RVR & 0xFF000000;
@@ -80,14 +80,15 @@ int main(void)
     //AHORA SI 3° SETEO EL CONTROL AND STATUS REGISTER CSR, INCLUYENDO ENABLE
     SysTick->SYST_CSR |= ((0x1 << CSR_ENA_BIT) | (0x0 << CSR_TICKINT_BIT) | (0x0 << CSR_CLKSRC_BIT) ); // OTRA FORMA DE HACER LO DE ARRIBA EN UNA LINEA (SETEO ENABLE, TICKINT Y CLK COMO EXTERNO 110)
     //4°HAGO ESTO EN ESTE ORDEN PORQUE ASI LO DICE LA USER GUIDE DEL CORTEX-M3
-    GPIO_C->GPIO_ODR |= (0x1 << PC13_ODR_BIT); // INICIALIZO APAGADO
+    GPIO_C->GPIO_ODR |= (0x1 << PC13_ODR_BIT); // INICIALIZO EL LED PC13 APAGADO
     uint32_t pc13ODRMask = 1 << PC13_ODR_BIT; //DEFINO LA MASCARA DEL ODR CON EL BIT 13 EN 1 
-    uint32_t SysTickCountFlagMask = 1 << CSR_COUNTFLAG_BIT;
+    uint32_t SysTickCountFlagMask = 1 << CSR_COUNTFLAG_BIT;//DEFINO LA MASCARA DEL CSR CON EL BIT 16 (COUNTFLAG) EN 1
+
 
 	while(1){
         if((SysTick->SYST_CSR & SysTickCountFlagMask))  { //VEO SI EL BIT 16 DEL CSR ESTA EN 1
             GPIO_C->GPIO_ODR ^= pc13ODRMask; // CAMBIO EL ESTADO DEL BIT 13 DEL ODR
-    }
+        }
     }
 return 0;
 }
