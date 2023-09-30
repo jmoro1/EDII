@@ -1,0 +1,33 @@
+************SEGUN LA PRESENTACION*****************
+1 - In order to use Alternate Functions (interrupts) on a certain port, the AFIO clock must be set to ENABLE. RCC_APB2ENR Bit 0 must be set to "1: Alternate Function IO clock enabled"
+2 - Despues hay que que activar las interrupciones externas EXTI para el pin que sera utilizado. Si queremos prender el led GPIOC13(PC13) corresponde el registro 4 AFIO_EXTICR4 y hay que setear
+el pin 13 como GPIOC poniendo EXTI13[3:0] como 0010: PC[x] pin. La mascara seria 0x00000020.
+3 - Seleccionar si se quiere que la interrupcion se active cuando se detecta un flanco ascendente o descendiente con los registros Rising trigger selection register (EXTI_RTSR) / Falling trigger selection register (EXTI_FTSR)
+poniendo en HIGH el bit correspondiente al puerto que se desee, en este caso para el puerto 13 es el bit 13.
+4 - Para configurar el Interupt Mask Register EXTI_IMR hay que poner el bit correspondiente a la línea 13 en HIGH, de esta manera se desenmascara la interrupción
+
+
+PARA EL EXTI ES EN REFERENCE MANUAL
+PARA EL NVIC ES EN EL MANUAL DEL CORTEX
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*************SEGUN EL REFERENCE MANUAL*************
+Software interrupt/event selection
+The 20 lines can be configured as software interrupt/event lines. The following is the
+procedure to generate a software interrupt.
+ Configure the mask bits of the 20 Interrupt/Event lines (EXTI_IMR, EXTI_EMR)
+ Set the required bit of the software interrupt register (EXTI_SWIER)
+***************************************************
