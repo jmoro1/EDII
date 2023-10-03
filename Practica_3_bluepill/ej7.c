@@ -87,9 +87,7 @@ int main(void)
 
 
 	while(1){
-        if((SysTick->SYST_CSR & SysTickCountFlagMask))  { //VEO SI EL BIT 16 DEL CSR ESTA EN 1
-            GPIO_C->GPIO_ODR ^= pc13ODRMask; // CAMBIO EL ESTADO DEL BIT 13 DEL ODR
-        }
+        
     }
 return 0;
 }
@@ -123,3 +121,5 @@ void SysTick_handler(void)
 
 	GPIO_C->GPIO_ODR ^= pc13ODRMask; // CAMBIO EL ESTADO DEL BIT 13 DEL ODR
 }
+
+
