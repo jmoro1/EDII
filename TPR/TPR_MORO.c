@@ -4,7 +4,7 @@
 
 #include <math.h>
 #define PI 3.14159265
-#define SAMPLES 1024  // CAMBIO DE 512 A 1024 MUESTRAS
+#define SAMPLES 1024  //--CAMBIO DE 512 A 1024 MUESTRAS
 
 typedef int			   int32_t;
 typedef short		   int16_t;
@@ -25,7 +25,7 @@ const interrupt_t vector_table[SAMPLES] __attribute__ ((section(".vtab"))) = {
 /*Vector data donde se guardan los ceros y unos de cada señal que se envía*/
 uint32_t data[SAMPLES] = {};
 
-/**SIGMA_DELTA**/  //(MODIFICAR PARA QUE FUNCIONE PARA UNA SOLA MUESTRA)
+/**SIGMA_DELTA**/  
 void sigma_delta(int * wavein, int mysamples, int cont){
 	int i;
 	int integrator = wavein[0];
@@ -117,6 +117,26 @@ const unsigned short SinTab8k[SAMPLES] = {    0,     6,    12,    18,    24,    
  -48,   -54,   -60,   -65,   -71,   -76,   -81,   -85,   -90,   -94,   -98,  -102,  -106,  -109,  -112,  -115,  -118,  -120,  -122,  -124,  -125,  -126,  -127,  -127,  -128,  -127,  -127,  -126,  -125,  -124,  -122,  -120,  -118,  -115,  -112,  -109,  -106,  -102,   -98,   -94,   -90,   -85,   -81,   -76,   -71,   -65,   -60,   -54,   -48,   -43,   -37,   -31,   -24,   -18,   -12,    -6};
 
 
+/*STRUCTS FOR ACCESING THE REGISTERS*/
+
+
+//GPIOC AND GPIOB BASE ADDRESS AND OFFSETS
+#define GPIOC_BASE_ADDRESS ((uint32_t) 0x40011000) // GPIOC BASE ADDRESS
+#define GPIOB_BASE_ADDRESS ((uint32_t) 0x40010C00) // GPIOB BASE ADDRESS
+
+
+typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
+    volatile uint32_t GPIO_CRL; //PORT CONFIGURATION REGISTER LOW (0-7) (OFFSET 0x00)
+    volatile uint32_t GPIO_CRH; //PORT CONFIGURATION REGISTER HIGH (8-15)(OFFSET 0x04) 
+    volatile const uint32_t GPIO_IDR;//INPUT DATA REGISTER(OFFSET 0x08) 
+    volatile uint32_t GPIO_ODR;//OUTPUT DATA REGISTER(OFFSET 0x0C)
+    volatile uint32_t GPIO_BSRR; // BIT SET/RESET REGISTER(OFFSET 0x10)
+    volatile uint32_t GPIO_BRR;//BIT RESET REGISTER(OFFSET 0x14)
+    volatile uint32_t GPIO_LCKR;//PORT CONFIGURATION LOCK REGISTER(OFFSET 0x18)
+}GPIO_Type;   
+
+//PUNTERO A LA STRUCT GPIO
+#define GPIO_C ((GPIO_Type *) GPIOC_BASE_ADDRESS)
 
 
 
@@ -195,9 +215,12 @@ int main(void)
 	int volatile *TIM2_CR1 = 0x40000000 + 0x00;					// offset CR1 0x00
 	*TIM2_CR1 = 0x0000;											// Reset CR1 just in case
 	int volatile *TIM2_PSC = 0x40000000 + 0x28;					// offset PSC 0x28
-	*TIM2_PSC = (72e3/8)/(sizeof(data)/sizeof(data[0]))-1;	// fCK_PSC / (PSC[15:0] + 1)  //-- (sizeof(data)/sizeof(data[0])) PODRIA REEMPLAZARSE POR SAMPLES
+	/**/
+	//*TIM2_PSC = (72e6/8)/(sizeof(data)/sizeof(data[0]))-1;	// fCK_PSC / (PSC[15:0] + 1)  //-- (sizeof(data)/sizeof(data[0])) PODRIA REEMPLAZARSE POR SAMPLES
+	*TIM2_PSC = ((72e3)/1024)-1;								//-- 1024 ES EL NRO "BASE", SI PSC*ARR = 1024 EL TIMER ES DE 1HZ, SI PSC*ARR = 1024000 EL TIMER SERA DE 1KHZ (PSC = 70.3 / ACTUAL = 70)
 	int volatile *TIM2_ARR = 0x40000000 + 0x2c;					// offset ARR 0x2c
-	*TIM2_ARR = 8-1;
+	*TIM2_ARR = 1;
+	//*TIM2_ARR = 8-1;
 	int volatile *TIM2_DIER = 0x40000000 + 0x0c;				// offset DIER 0x0c
 	*TIM2_DIER |= (1 << 14);									// Trigger DMA request enable
 	*TIM2_DIER |= (1 << 8);										// Update DMA request enable
