@@ -1,30 +1,64 @@
-// vi: ts=4 shiftwidth=4
-//																			  //
-// Author(s):																  //
-//	 Miguel Angel Sagreras													  //
-//																			  //
-// Copyright (C) 2021														  //
-//	  Miguel Angel Sagreras													  //
-//																			  //
-// This source file may be used and distributed without restriction provided  //
-// that this copyright statement is not removed from the file and that any	  //
-// derivative work contains  the original copyright notice and the associated //
-// disclaimer.																  //
-//																			  //
-// This source file is free software; you can redistribute it and/or modify   //
-// it under the terms of the GNU General Public License as published by the   //
-// Free Software Foundation, either version 3 of the License, or (at your	  //
-// option) any later version.												  //
-//																			  //
-// This source is distributed in the hope that it will be useful, but WITHOUT //
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or	  //
-// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for   //
-// more details at http://www.gnu.org/licenses/.							  //
-//																			  //
-
 #define SRAM_SIZE		((uint32_t) 0x00005000)
 #define SRAM_BASE		((uint32_t) 0x20000000)
 #define STACKINIT		((interrupt_t)(SRAM_BASE+SRAM_SIZE))
+
+#define DMA1_BASE			0x40020000	// 
+#define DMA2_BASE			0x40020400	// 
+
+#define STK_BASE			0xE000E010	// 
+
+#define TIM2_BASE			0x40000000	//
+
+#define GPIO_PORT_B_BASE	0x40010C00	// direccion base del GPIO puerto B (pag. 51 / tabla 3)
+#define GPIO_PORT_C_BASE	0x40011000	// direccion base del GPIO puerto C (pag. 51 / tabla 3)
+
+// Clock registers
+#define RCC_BASE			0x40021000	// Direccion base del Clock
+#define RCC_CR_OFFSET		0x00
+#define RCC_CFGR_OFFSET		0x04
+#define AHBENR_OFFSET		0x14
+#define APB2ENR_OFFSET		0x18
+#define APB1ENR_OFFSET		0x1C
+
+#define FLASH_BASE			0x40022000
+#define FLASH_ACR_OFFSET	0x00
+
+
+// GPIO registers
+#define BSRR_OFFSET			0x10
+#define CRL_OFFSET			0x00	// 0x40011000 + 0x00
+#define CRH_OFFSET			0x04	// 0x40011000 + 0x04
+#define IDR_OFFSET			0x08	// 0x40011000 + 0x08
+#define ODR_OFFSET			0x0C	// 0x40011000 + 0x0C
+#define BSRR_OFFSET			0x10	// 0x40011000 + 0x10
+#define BRR_OFFSET			0x14	// 0x40011000 + 0x14
+#define LCKR_OFFSET			0x18	// 0x40011000 + 0x18
+
+// DMA registers
+#define DMA1_ISR_OFFSET		0x00
+#define DMA1_IFCR_OFFSET	0x04
+
+#define DMA1_CCR1_OFFSET	0x08
+#define DMA1_CNDTR1_OFFSET	0x0C
+#define DMA1_CPAR1_OFFSET	0x10
+#define DMA1_CMAR1_OFFSET	0x14
+ 
+#define DMA1_CCR2_OFFSET	0x1C
+#define DMA1_CNDTR2_OFFSET	0x20
+#define DMA1_CPAR2_OFFSET	0x24
+#define DMA1_CMAR2_OFFSET	0x28
+
+#define DMA1_CCR3_OFFSET	0x30
+#define DMA1_CNDTR3_OFFSET	0x34
+#define DMA1_CPAR3_OFFSET	0x38
+#define DMA1_CMAR3_OFFSET	0x3C
+
+// Timer 2 registers
+#define TIM2_CR1_OFFSET		0x00
+#define TIM2_DIER_OFFSET	0x0C
+#define TIM2_PSC_OFFSET		0x28
+#define TIM2_ARR_OFFSET		0x2C
+
 
 typedef int			   int32_t;
 typedef short		   int16_t;
@@ -35,6 +69,8 @@ typedef unsigned char  uint8_t;
 
 typedef void(*interrupt_t)(void);
 
+/***********************************************************************************/
+
 typedef union {
 	uint8_t  byte[4];
 	uint16_t hword[2];
@@ -43,274 +79,67 @@ typedef union {
 
 typedef word_t page[0x400/sizeof(uint32_t)];
 
-// Memory map
 
-enum {TIM2	= 0, TIM3  = 1, TIM4  = 2 };
-enum {GPIOA = 0, GPIOB = 1, GPIOC = 2, GPIOD = 3, GPIOE = 4, GPIOF = 5 };
-enum {DMA1	= 0 };
-enum {CHN1	= 0, CHN2  = 1, CHN3  = 2, CHN4  = 3, CHN5	= 4, CHN6  = 5, CHN7 = 6, CHN8 = 7 };
-enum {ADC1	= 0 };
-struct {
-	union {
-		struct {
-			uint32_t CR1;
-			uint32_t CR2;
-			uint32_t SMCR;
-			uint32_t DIER;
-			uint32_t SR;
-			uint32_t EGR;
-			uint32_t CCMR1;
-			uint32_t CCMR2;
-			uint32_t CCER;
-			uint32_t CNT;
-			uint32_t PSC;
-			uint32_t ARR;
-			uint32_t RES1;
-			uint32_t CCR1;
-			uint32_t CCR2;
-			uint32_t CCR3;
-			uint32_t CCR4;
-			uint32_t BDTR;
-			uint32_t DCR;
-			uint32_t DMAR;
-		} REGs;
-		page reserved;
-	} TIMs[3];
-
-	word_t reserved1[(0x40002800-0x40000c00)/sizeof(word_t)];
-	page RTC;
-	page WWDG;
-	page IWDG;
-	word_t reserved2[(0x40003800-0x40003400)/sizeof(word_t)];
-	page SPI2;
-	word_t reserved3[(0x40004400-0x40003c00)/sizeof(word_t)];
-	page USART[2];
-	word_t reserved4[(0x40005400-0x40004c00)/sizeof(word_t)];
-	page I2C[2];
-	page USB;
-	page USBCAN_SRAM;
-	page bxCAN;
-	word_t reserved5[(0x40006c00-0x40006800)/sizeof(word_t)];
-	page BKP;
-	page PWR;
-	word_t reserved6[(0x40010000-0x40007400)/sizeof(word_t)];
-
-	page AFIO;
-	page EXTI;
-
-	union {
-		struct {
-			uint32_t CRL;
-			uint32_t CRH;
-			uint32_t IDR;
-			uint32_t ODR;
-			uint32_t BSRR;
-			uint32_t BRR;
-			uint32_t LCKR;
-		} REGs;
-		page reserved;
-	} GPIOs[5];
-	word_t reserved7[(0x40012400-0x40011C00)/sizeof(word_t)];
-	union {
-		struct {
-			uint32_t SR;
-			uint32_t CR1;
-			uint32_t CR2;
-			uint32_t SMPR1;
-			uint32_t SMPR2;
-			uint32_t JOFR;
-			uint32_t HTR;
-			uint32_t LTR;
-			uint32_t SQR1;
-			uint32_t SQR2;
-			uint32_t SQR3;
-			uint32_t JSQR;
-			uint32_t JDR;
-			uint32_t DR;
-		} REGs;
-		page reserved;
-	} ADC[2];
-	page TIM1;
-	page SPI1;
-	word_t reserved8[(0x40013800-0x40013400)/sizeof(word_t)];
-	union  {
-		struct {
-			uint32_t SR;
-			uint32_t DR;
-			uint32_t BRR;
-			uint32_t CR1;
-			uint32_t CR2;
-			uint32_t CR3;
-			uint32_t GTPR;
-		} REGs;
-		page reserved;
-	} USART1;
-	word_t reserved9[(0x40020000-0x40013C00)/sizeof(word_t)];
-	union {
-		struct {
-			uint32_t ISR;
-			uint32_t IFCR;
-			struct {
-				uint32_t CCR;
-				uint32_t CNDTR;
-				uint32_t CPAR;
-				uint32_t CMAR;
-				uint32_t RESERVED;
-			} CHN[8];
-		} REGs;
-		page reserved;
-	} DMAs[1];
-	word_t reservedA[(0x40021000-0x40020400)/sizeof(word_t)];
-
-	union {
-		struct {
-			uint32_t CR;
-			uint32_t CFGR;
-			uint32_t CIR;
-			uint32_t APB2RSTR;
-			uint32_t APB1RSTR;
-			uint32_t AHBENR;
-			uint32_t APB2ENR;
-			uint32_t APB1ENR;
-			uint32_t BDCR;
-			uint32_t CSR;
-			uint32_t AHBRSTR;
-			uint32_t CFGR2;
-		} REGs;
-		page reserved;
-	} RCC;
-	word_t reservedB[(0x40022000-0x40021400)/sizeof(word_t)];
-
-	union {
-		struct {
-			uint32_t ACR;
-			uint32_t KEYR;
-			uint32_t OPTKEYR;
-			uint32_t SR;
-			uint32_t CR;
-			uint32_t AR;
-			uint32_t reserved;
-			uint32_t OBR;
-			uint32_t WRPR;
-		} REGs;
-		page reserved;
-	} FLASH;
-} volatile *const DEVMAP = (void *) 0x40000000;
-
-#define ENA_IRQ(IRQ) {CTX->NVIC.REGs.ISER[((uint32_t)(IRQ) >> 5)] = (1 << ((uint32_t)(IRQ) & 0x1F));}
-#define DIS_IRQ(IRQ) {CTX->NVIC.REGs.ICER[((uint32_t)(IRQ) >> 5)] = (1 << ((uint32_t)(IRQ) & 0x1F));}
-#define CLR_IRQ(IRQ) {CTX->NVIC.REGs.ICPR[((uint32_t)(IRQ) >> 5)] = (1 << ((uint32_t)(IRQ) & 0x1F));}
-
-struct {
-	word_t reversed0[(0xe000e010-0xe0000000)/sizeof(word_t)];
-	union {
-		struct {
-			uint32_t CSR;
-			uint32_t RVR;
-			uint32_t CVR;
-			uint32_t CALIB;
-		} REGs;
-	} SYSTICK;
-	word_t reversed1[(0xe000e100-0xe000e020)/sizeof(word_t)];
-	union {
-		struct {
-			uint32_t ISER[8];
-			uint32_t RES0[24];
-			uint32_t ICER[8];
-			uint32_t RES1[24];
-			uint32_t ISPR[8];
-			uint32_t RES2[24];
-			uint32_t ICPR[8];
-			uint32_t RES3[24];
-			uint32_t IABR[8];
-			uint32_t RES4[56];
-			uint8_t  IPR[240];
-			uint32_t RES5[644];
-			uint32_t STIR;
-		} REGs;
-	} NVIC;
-} volatile *const CTX = ((void *) 0xE0000000);
-
-enum IRQs {
-	IRQ_DMA1CHN2  = 12,
-	IRQ_ADC1_2	  = 18,
-	IRQ_TIM2	  = 28,
-	IRQ_USART1	  = 37,
-};
+/***********************************************************************************/
 
 int  main(void);
-void handler_systick(void);
-void handler_dma1chn2(void);
-void handler_adc1_2(void);
-void handler_tim2(void);
-void handler_usart1(void);
 
 const interrupt_t vector_table[] __attribute__ ((section(".vtab"))) = {
-	STACKINIT,												// 0x0000_0000 Stack Pointer
-	(interrupt_t) main,										// 0x0000_0004 Reset
-	0,														// 0x0000_0008
-	0,														// 0x0000_000C
-	0,														// 0x0000_0010
-	0,														// 0x0000_0014
-	0,														// 0x0000_0018
-	0,														// 0x0000_001C
-	0,														// 0x0000_0020
-	0,														// 0x0000_0024
-	0,														// 0x0000_0028
-	0,														// 0x0000_002C
-	0,														// 0x0000_0030
-	0,														// 0x0000_0034
-	0,														// 0x0000_0038
-	0,														// 0x0000_003C
-	0,														// 0x0000_0040
-	0,														// 0x0000_0044
-	0,														// 0x0000_0048
-	0,														// 0x0000_004C
-	0,														// 0x0000_0050
-	0,														// 0x0000_0054
-	0,														// 0x0000_0058
-	0,														// 0x0000_005C
-	0,														// 0x0000_0060
-	0,														// 0x0000_0064
-	0,														// 0x0000_0068
-	0,														// 0x0000_006C
-	handler_dma1chn2,										// 0x0000_0070 DMA1_CHN2
-	0,														// 0x0000_0074
-	0,														// 0x0000_0078
-	0,														// 0x0000_007C
-	0,														// 0x0000_0080
-	0,														// 0x0000_0084
-	0,														// 0x0000_0088
-	0,														// 0x0000_008C
-	0,														// 0x0000_0090
-	0,														// 0x0000_0094
-	0,														// 0x0000_0098
-	0,														// 0x0000_009C
-	0,														// 0x0000_00A0
-	0,														// 0x0000_00A4
-	0,														// 0x0000_00A8
-	0,														// 0x0000_00AC
-	handler_tim2,											// 0x0000_00B0 TIM2
+	STACKINIT,			// 0x0000_0000 Stack Pointer
+	(interrupt_t) main, // 0x0000_0004 Reset
 };
 
-void handler_dma1chn2(void)
-{
+/**********************************************************************
+ * Punteros a los registros de GPIOs
+ **********************************************************************/
 
-//	DEVMAP->GPIOs[GPIOC].REGs.ODR ^= -1;
-	DEVMAP->DMAs[DMA1].REGs.IFCR |= (0xf << 1);
-	CLR_IRQ(IRQ_DMA1CHN2);
-}
+// Led (GPIOC pin 13)
+volatile int * const GPIO_PORT_C_ODR_ptr = (int *)(GPIO_PORT_C_BASE + ODR_OFFSET); // Direccion del registro ODR del GPIOC
+volatile int * const GPIO_PORT_C_CRL_ptr = (int *)(GPIO_PORT_C_BASE + CRL_OFFSET); // Direccion del registro CRL del GPIOC
+volatile int * const GPIO_PORT_C_CRH_ptr = (int *)(GPIO_PORT_C_BASE + CRH_OFFSET); // Direccion del registro CRH del GPIOC
 
-void handler_tim2(void)
-{
-	DEVMAP->TIMs[TIM2].REGs.SR &= ~(1 << 0);
-	CLR_IRQ(IRQ_TIM2);
-}
+// Botones (GPIOB)
+volatile int * const GPIO_PORT_B_IDR_ptr = (int *)(GPIO_PORT_B_BASE + IDR_OFFSET); // Direccion del registro IDR del GPIOB
+volatile int * const GPIO_PORT_B_CRL_ptr = (int *)(GPIO_PORT_B_BASE + CRL_OFFSET); // Direccion del registro CRL del GPIOB
+volatile int * const GPIO_PORT_B_CRH_ptr = (int *)(GPIO_PORT_B_BASE + CRH_OFFSET); // Direccion del registro CRH del GPIOB
+
+// Direccion del registro APB2ENR del RCC
+volatile int * const RCC_APB2ENR_ptr = (int *)(RCC_BASE + APB2ENR_OFFSET);
+volatile int * const RCC_APB1ENR_ptr = (int *)(RCC_BASE + APB1ENR_OFFSET);
+volatile int * const RCC_AHBENR_ptr = (int *)(RCC_BASE + AHBENR_OFFSET);
+volatile int * const RCC_CR_ptr = (int *)(RCC_BASE + RCC_CR_OFFSET);
+volatile int * const RCC_CFGR_ptr = (int *)(RCC_BASE + RCC_CFGR_OFFSET);
+
+volatile int * const FLASH_ACR_ptr = (int *)(FLASH_BASE + FLASH_ACR_OFFSET);
+
+/**********************************************************************
+ * Punteros a los registros del DMA
+ **********************************************************************/
+
+volatile int * const DMA1_CCR2_ptr = (int *)(DMA1_BASE + DMA1_CCR2_OFFSET);
+volatile int * const DMA1_CNDTR2_ptr = (int *)(DMA1_BASE + DMA1_CNDTR2_OFFSET);
+volatile int * const DMA1_CPAR2_ptr = (int *)(DMA1_BASE + DMA1_CPAR2_OFFSET);
+volatile int * const DMA1_CMAR2_ptr = (int *)(DMA1_BASE + DMA1_CMAR2_OFFSET);
+
+/**********************************************************************
+ * Punteros a los registros del Timer 2
+ **********************************************************************/
+volatile int * const TIM2_CR1_ptr = (int *)(TIM2_BASE + TIM2_CR1_OFFSET);
+volatile int * const TIM2_DIER_ptr = (int *)(TIM2_BASE + TIM2_DIER_OFFSET);
+volatile int * const TIM2_PSC_ptr = (int *)(TIM2_BASE + TIM2_PSC_OFFSET);
+volatile int * const TIM2_ARR_ptr = (int *)(TIM2_BASE + TIM2_ARR_OFFSET);
+
+volatile int i = 0;
+
+/**********************************************************************
+ * Tabla con senos
+ **********************************************************************/
 
 #define RESOLUTION 15
 #define MAXVAL  ((unsigned short) ((1 << RESOLUTION)-1))
 #define MAXHALF ((unsigned short)  (1 << (RESOLUTION-1)))
 #define TABSIZE 4096
+
 typedef unsigned short pcm_t;
 const unsigned short sintab[TABSIZE] = {
 	16384, 16409, 16434, 16459, 16484, 16509, 16534, 16559, 16585, 16610, 16635, 16660, 16685, 16710, 16735, 16760, 
@@ -573,170 +402,170 @@ const unsigned peak[16] = {     0,  32767,  32767,  61604,  32767,  64357,  6160
 volatile uint16_t data[TABSIZE];
 
 
-unsigned char fosd (pcm_t pcm, int acc[1], pcm_t fdbk) 
-{
-	int diff;
-
-	diff =   fdbk;
-	diff +=  pcm;
-	diff >>= 1;
-
-	acc[0] += diff-MAXHALF;
-	return (acc[0] > 0) ? 1 : 0;
-}
-
-unsigned char sosd (pcm_t pcm, int acc[2], pcm_t fdbk)
+unsigned char sosd (pcm_t pcm, int acc[2], pcm_t fdbk)			//  second-order sigma-delta: sosd(sample, acc, fdbk);
 {
 	int diff1;
 	int diff2;
 
-	diff1 =   fdbk;
-	diff1 +=  pcm;
-	diff1 >>= 1;
+	diff1 =   fdbk;				//Asigno valor a diff1
+	diff1 +=  pcm;				//Le sumo valor a diff1
+	diff1 >>= 1;				// Desplazo un byte a la derecha que es lo mismo que dividirlo por 2 en binario
 
-	acc[0] += diff1-MAXHALF;
+	acc[0] += diff1-MAXHALF;	// Centraliza el valor resultante alrededor de un punto de referencia,
 
-	diff2  = acc[0];
-	diff2 += MAXHALF;
-	diff2 += fdbk;
-	diff2 >>= 1;
+	diff2  = acc[0];			//Asigno valor a diff2
+	diff2 += MAXHALF;			//Le sumo valor a diff2
+	diff2 += fdbk;				//Le sumo valor a diff2 (el ultimo valor medido)
+	diff2 >>= 1;				// Divido diff2 por 2
 
-	acc[1] += diff2;
-	acc[1] -= MAXHALF;
+	acc[1] += diff2;			//Actualizo el valor de acc[1] en base a mi nuevo diff
+	acc[1] -= MAXHALF;			//Le resto el valor de referencia
 
-	return (acc[1] > 0) ? 1 : 0;
+	return (acc[1] > 0) ? 1 : 0;  // La función opera sobre estos valores, actualizando acc y fdbk, y finalmente, devuelve 1 si acc[1] es mayor que 0, o 0 en caso contrario.
 }
 
-// codigo de mas para prueba
-	#define GPIOB_BASE_ADDRESS ((uint32_t) 0x40010C00) // GPIOB BASE ADDRESS
-	#define GPIO_IDR_OFFSET ((uint32_t) 0x08) // INPUT DATA REGISTER OFFSET
-	volatile uint32_t *pIDR = (uint32_t *)(GPIOB_BASE_ADDRESS + GPIO_IDR_OFFSET);
-	#define GPIO_IDR_BIT9 ((uint32_t) 0x00000200) // BIT 5 DEL IDR
-	#define GPIO_CRL_OFFSET ((uint32_t) 0x00) // CONFIGURATION REGISTER LOW (0-7) OFFSET
-	#define GPIO_CRH_OFFSET ((uint32_t) 0x04) // CONFIGURATION REGISTER HIGH (8-15) OFFSET
-	volatile uint32_t *pCRL = (uint32_t *)(GPIOB_BASE_ADDRESS + GPIO_CRL_OFFSET);
-    volatile uint32_t *pCRH = (uint32_t *)(GPIOB_BASE_ADDRESS + GPIO_CRH_OFFSET);
+// uint32_t const data[2] = {
+// 	0x00000000, 0x00002000};
 
+int main(void){
 
+	*RCC_CR_ptr |= (1 << 16); 				// Enable HSE
+	while (!(*RCC_CR_ptr & (1 << 17)));		// Wait for HSE is locked
 
+	*RCC_CR_ptr &= ~(1 << 24); 				// Disable PLL
+	*RCC_CFGR_ptr |= (0b0111 << 18);        // Set PLLMULL to 9. Set PLL output clock to 72 Mhz
+	*RCC_CFGR_ptr |= (1 << 16);             // Select HSE as the PLL source clock
+	*RCC_CR_ptr |= (1 << 24);               // Enable PLL
+	while (!(*RCC_CR_ptr & (1 << 25)));		// Wait for PLL to lock
+	
+	/*FLASH ACR*/
+	*FLASH_ACR_ptr |= (0b010 << 0);			// Set FLASH WAIT STATE to 2
+	*RCC_CFGR_ptr |= (0b0000 << 4);         // Set AHB HPRE division to 1. Set AHB clock to 72 Mhz
+	*RCC_CFGR_ptr |= (0b100 << 8);          // Set APB1 PPRE1 division to 2. Set AHB clock to 36 Mhz
+	*RCC_CFGR_ptr |= (0b10 << 0);			// Select PLL clock as the system clock
+	while (!(*RCC_CFGR_ptr & (0b10 << 2)));	// Wait for PLL clock to be selected
 
-int main(void)
-{
-
-	// PCLK code
-	DEVMAP->RCC.REGs.CR   |= (1 << 16);						// Enable HSE
-	while (!(DEVMAP->RCC.REGs.CR & (1 << 17)));				// Wait for HSE is locked
-
-	DEVMAP->RCC.REGs.CR   &= ~(1 << 24);					// Disable PLL
-	DEVMAP->RCC.REGs.CFGR |= (0b0111 << 18);				// Set PLLMULL to 9. Set PLL output clock to 72 Mhz
-	DEVMAP->RCC.REGs.CFGR |=  (1 << 16);					// Select HSE as the PLL source clock
-	DEVMAP->RCC.REGs.CR   |=  (1 << 24);					// Enable PLL
-	while (!(DEVMAP->RCC.REGs.CR & (1 << 25)));				// Wait for PLL to lock
-
-	DEVMAP->FLASH.REGs.ACR |= (0b010 << 0);					// Set FLASH WAIT STATE to 2
-	DEVMAP->RCC.REGs.CFGR  |= (0b0000 << 4);				// Set AHB HPRE division to 1. Set AHB clock to 72 Mhz
-	DEVMAP->RCC.REGs.CFGR  |= (0b100 << 8);					// Set APB1 PPRE1 division to 2. Set AHB clock to 36 Mhz
-
-	DEVMAP->RCC.REGs.CFGR |= (0b10 << 0);					// Select PLL clock as the system clock
-	while (!(DEVMAP->RCC.REGs.CFGR & (0b10 << 2)));			// Wait for PLL clock to be selected
+	
+	// Habilitación de relojes
+	*RCC_APB2ENR_ptr |= (1 << 2);  			// Enable GPIOA.
+	*RCC_APB2ENR_ptr |= (1 << 3);  			// Enable GPIOB.
+	*RCC_APB2ENR_ptr |= (1 << 4);  			// Enable GPIOC.
+	*RCC_APB1ENR_ptr |= (1 << 0);			// Enable TIM2 clock.
+	*RCC_AHBENR_ptr  |= (1 << 0);			// Enable DMA1 clock.
+	
 
 	// DMA code
-	DEVMAP->RCC.REGs.APB2ENR |= (1 << 4);					// Enable GPIOC clock.
-	DEVMAP->RCC.REGs.APB2ENR |= (1 << 3);					// Enable GPIOB clock.
-	DEVMAP->RCC.REGs.APB1ENR |= (1 << 0);					// Enable TIM2 clock.
-	DEVMAP->RCC.REGs.AHBENR  |= (1 << 0);					// Enable DMA1 clock.
+	*DMA1_CNDTR2_ptr = sizeof(data)/sizeof(uint32_t); 			// Transfer size
+	*DMA1_CMAR2_ptr = (uint32_t) data; 
+	*DMA1_CPAR2_ptr = (uint32_t) GPIO_PORT_C_ODR_ptr; 			// Peripheral destination address
 
-	DEVMAP->GPIOs[GPIOC].REGs.CRL  = 0x33333333;			// Make low GPIOC output
-	DEVMAP->GPIOs[GPIOC].REGs.CRH  = 0x33333333;			// Make high GPIOC output
-//	DEVMAP->GPIOs[GPIOC].REGs.ODR ^= -1;
+	*DMA1_CCR2_ptr = 0;											// Reset CCR
+	*DMA1_CCR2_ptr &= ~(1 << 14);								// Disable memory to memory transfer on DMA1 channel 2
+	*DMA1_CCR2_ptr |= (0b11 << 12);								// Set DMA priority to very high
+	*DMA1_CCR2_ptr |= (0b10 << 10);								// Set memory transfer size to 32-bits
+	*DMA1_CCR2_ptr |= (0b10 << 8);								// Set peripheral transfer size to 32-bits
+	*DMA1_CCR2_ptr |= (1 << 7);									// Enable memory increment mode
+	*DMA1_CCR2_ptr &= ~(1 << 6);								// Disable peripheral increment mode
+	*DMA1_CCR2_ptr |= (1 << 5);									// Enable circular mode
+	*DMA1_CCR2_ptr |= (1 << 4);									// Read from memory
+	*DMA1_CCR2_ptr |= (1 << 2);									// Enable half transfer completed interrupt
+	*DMA1_CCR2_ptr |= (1 << 1);									// Enable transfer completed interrupt
+	*DMA1_CCR2_ptr |= (1 << 0);	
+	
+	// Timer TIM2
+	*TIM2_CR1_ptr = 0x0000;										// Reset CR1 just in case
+	*TIM2_PSC_ptr = (72e3/8)/(sizeof(data)/sizeof(uint32_t))-1;	// fCK_PSC / (PSC[15:0] + 1) (72e3/8)= visible oscilo con filtro (72e6/8)=visible LED
+	*TIM2_ARR_ptr = 8-1;											// Counter
+	*TIM2_DIER_ptr |= (1 << 14);								// Trigger DMA request enable
+	*TIM2_DIER_ptr |= (1 << 8);									// Update DMA request enable
+	*TIM2_CR1_ptr |= (1 << 0);
 
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CNDTR = sizeof(data)/sizeof(data[0]); // Transfer size
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CMAR	= (uint32_t) data;				 // Memory source address
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CPAR	= (uint32_t) &DEVMAP->GPIOs[GPIOC].REGs.ODR; // Peripheral destination address
+	*GPIO_PORT_C_CRL_ptr = 0x33333333;  // Configuracion del GPIOC (desde el pin 1 al 8)
+	*GPIO_PORT_C_CRH_ptr = 0x33333333;	// Configuracion del GPIOC (desde el pin 8 al 15)
+										//    Mode = 11 (Salida de hasta 50 MHz) para el pin 13 del GPIOC
+										//    CNF  = 00 (Salida Push-Pull)
 
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR  = 0;				// Reset CCR
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR &= ~(1 << 14);	// Disable memory to memory transfer on DMA1 channel 2
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (0b11 << 12); // Set DMA priority to very high
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (0b01 << 10); // Set memory transfer size to 16-bits
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (0b10 << 8);	// Set peripheral transfer size to 32-bits
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 7);		// Enable memory increment mode
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR &= ~(1 << 6);		// Disable peripheral increment mode
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 5);		// Enable circular mode
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 4);		// Read from memory
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 2);		// Enable half transfer completed interrupt
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 1);		// Enable transfer completed interrupt
-	ENA_IRQ(IRQ_DMA1CHN2);									// Enable DMA1 Channel2 inturrupt on NVIC
-
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |= (1 << 0);		// Enable DMA
-
-	ENA_IRQ(IRQ_TIM2);										// Enable TIM2 interrupt on NVIC
-	DEVMAP->TIMs[TIM2].REGs.CR1  = 0x0000;					// Reset CR1 just in case
-//	DEVMAP->TIMs[TIM2].REGs.CR1  |= (1 << 4);				// Down counter mode
-	DEVMAP->TIMs[TIM2].REGs.PSC   = (72e3/8)/(sizeof(data)/sizeof(data[0]))-1;	// fCK_PSC / (PSC[15:0] + 1)
-	DEVMAP->TIMs[TIM2].REGs.ARR   = 8-1;
-	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 << 14);				// Trigger DMA request enable
-	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 <<  8);				// Update DMA request enable
-//	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 <<  6);				// Enable interrupt
-//	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 <<  0);				// Update interrupt enable
-
-	DEVMAP->TIMs[TIM2].REGs.CR1  |= (1 << 0);				// Finally enable TIM1 module
+	*GPIO_PORT_B_CRL_ptr = 0x88888888;  // Configuracion del GPIOB (desde el pin 1 al 8)
+	*GPIO_PORT_B_CRH_ptr = 0x88888888;	// Configuracion del GPIOB (desde el pin 8 al 15)
+										//    Mode = 00 (Entrada)
+										//    CNF  = 10 Input pull-down/Input pull-up
 
 	uint16_t idr;
 	uint16_t idr_last;
-	
+	idr=0b0000;
 	idr_last = 0b0000;
-
-
-	// Para probar boton
-
-	int volatile *APB2ENR = (int*)(0x40021000 + 0x18);				// APB2 clock enable adress
-	*APB2ENR |= (1<<3);										// Enable GPIOB clock (input for polling)
-	int volatile *crlb = (int*)(0x40010c00);						// Low Register
-	*crlb = 0x88888888;										// Input -> MODE=00 & CNF=10 |1000|1000|1000|1000|
-	int volatile *crhb = (int*)(0x40010c00 + 0x04);					// High Register
-	*crhb = 0x88888888;										// Input -> MODE=00 & CNF=10 |1000|1000|1000|1000|
-	int volatile *IDR = (int*)(0x40010c00 + 0x08);
-		//
+	
 	for(;;) {
-		int acc[2] = {0, 0};
+		int acc[2] = {0, 0};									// Es un arreglo de dos enteros utilizado como memoria o estado para los cálculos
+		
+		// idr = (DEVMAP->GPIOs[GPIOB].REGs.IDR >> 6);			// PB[9:6]
+		idr &= 0xf;												// El operador &= realiza una operación de bit a bit AND entre idr y 0xf (0000 1111 en binario)
+																//Conservará solo los primeros 4 bits de idr. Suponiendo que idr originalmente 
+																//tiene un valor de 8 bits como xxxx xxxx, después de aplicar la operación idr &= 0xf;, los primeros cuatro bits serán los únicos relevantes.
+		idr = 0b0000;   										// Si idr = 0b0001, idr sería igual a 0b0001 & 0b1111 = 0b0001 = 1 después de ejecutar ambas instrucciones.
+	
 
-	if(*IDR &= (1<<9)){
-			idr = 0b1000;
-		}else{
-			idr = 0b0000;
+		if ((*GPIO_PORT_B_IDR_ptr & 0x00001000) == 0) { // Esto hay que verlo, ya que si esta en estado normal tiene que titilar entonces arranca con idr = 0b0001 ahora si en estado normal esta "parado"idr = 0b0000;
+    		idr = 0b0001; // Bit 12 está conectado
 		}
-		
-		
 
-		
-		//idr = (DEVMAP->GPIOs[GPIOB].REGs.IDR >> 6);			// PB[9:6]
-		//idr = 0b0011;
-		if ((idr_last != idr) & (idr!=0b0000)) {
+		if ((*GPIO_PORT_B_IDR_ptr & 0x00002000) == 0) {
+			idr = 0b0010; // Bit 13 está conectado
+		}
+
+		if ((*GPIO_PORT_B_IDR_ptr & 0x00004000) == 0) {
+			idr = 0b0100; // Bit 14 está conectado
+		}
+
+		if ((*GPIO_PORT_B_IDR_ptr & 0x00008000) == 0) {
+   			idr = 0b1000; // Bit 15 está conectado
+		}
+
+		if (((*GPIO_PORT_B_IDR_ptr & 0x00003000) == 0x00000000)) {
+			idr = 0b0011; // Bits 12 y 13 están conectados
+		}
+
+		if (((*GPIO_PORT_B_IDR_ptr & 0x00005000) == 0x00000000)) {
+			idr = 0b0101; // Bits 12 y 14 están conectados
+		}
+
+		if (((*GPIO_PORT_B_IDR_ptr & 0x00009000) == 0x00000000)) {
+			idr = 0b1001; // Bits 12 y 15 están conectados
+		}
+
+		if (((*GPIO_PORT_B_IDR_ptr & 0x00006000) == 0x00000000)) {
+			idr = 0b0110; // Bits 13 y 14 están conectados
+		}
+
+		if (((*GPIO_PORT_B_IDR_ptr & 0x0000A000) == 0x00000000)) {
+			idr = 0b1010; // Bits 13 y 15 están conectados
+		}
+
+		if (((*GPIO_PORT_B_IDR_ptr & 0x0000C000) == 0x00000000)) {
+			idr = 0b1100; // Bits 14 y 15 están conectados
+		}
+
+		if (idr_last != idr) { 									//Verifica que este apretado algun boton
 			unsigned short fdbk = 0;
 
 			for (int i = 0; i < TABSIZE-1; i++) {
 				uint32_t sample = 0;
 				uint8_t sd;
 
-				for (int j = 0; j < 4; j++) {
-					if (idr & (1 << j)) sample += sintab[i*(1 << j) & (TABSIZE-1)];
+				for (int j = 0; j < 4; j++) {					// Analizo los botones presionados 0b0001= el valor de sintab[0] se suma a sample
+																// 0b0010 el valor de sintab[1] se suma a sample
+					if (idr & (1 << j)){						// Si el bit j-ésimo de idr está activado
+					sample += sintab[i*(1 << j) & (TABSIZE-1)]; // Este cálculo permite acceder y sumar valores de la tabla sintab según combinaciones de i y j 
+																// mientras asegura que el índice resultante esté dentro de los límites de la tabla.
+					}
 				}
 				if (peak[idr & 0xf]) {
-					sample = (sample*MAXVAL)/peak[idr & 0xf];
+					sample = (sample*MAXVAL)/peak[idr & 0xf];	// Normaliza el valor segun los botones que esten apretados cuando es un solo boton el valor normalizado 
+																// de peak es de 32767 y si hay mas de uno presionado el valor asignado se normalizara segun el vector peak
 				}
-
-				 //sd = fosd(sample, acc, fdbk);
-				sd = sosd(sample, acc, fdbk);
-				data[i] = (sd) ? (1 << 13) : 0;
-				fdbk    = (sd > 0) ? 0 : MAXVAL;
-			}
-		}
-				else{
-					for (int i = 0; i < TABSIZE-1; i++) {
-					{
-					data[i] =0;
-					}
-				
+				sd = sosd(sample, acc, fdbk);					// Funcion Sigma delta de segundo orden
+				data[i] = (sd) ? (1 << 13) : 0;					// Vector data de salida
+				fdbk    = (sd > 0) ? 0 : MAXVAL;				// El valor fdbk de realimentacion sirve para comparar el valor anterior con el posterior
 			}
 			idr_last = idr;
 		}
@@ -744,3 +573,4 @@ int main(void)
 
 	return 0;
 }
+
