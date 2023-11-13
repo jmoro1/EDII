@@ -4,9 +4,12 @@
 consta de 4 botones que son las entradas que representan señales senoidales de 1kHz,2kHz,4kHz y 8kHz respectivamente,
 cuando se apreta cada botón la salida es una onda senoidal que es combinacion lineal de las señales de entrada,
 Desde el firmware se leen los botones mediante puertos GPIO, la transferencia de datos se hace mediante DMA
-utilizando el timer del Cortex como trigger. La señal analógica es convertida por un algoritmo Sigma Delta
+utilizando el timer TIM2 del Cortex-M3 como trigger por hardware. La señal es convertida por un algoritmo Sigma Delta y enviado a la salida
+que puede visualizarse en un osciloscopio mediante un filtro pasa bajos con una frecuencia de corte de al menos 8kHz.
 
-
+Los comentarios destinados a la documentación de qué registros se acceden se encuentra en ingles para facilitar la lectura
+en conjunto con el Manual de Referencia del STM32F y del Cortex-M3, los comentarios referidos a documentar el funcionamiento
+del codigo estan en español.
 
 
 */
@@ -32,7 +35,7 @@ fully implemented but correctly commented for warning.
 
 //**********FLASH******************
 
-typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE CONTROL DE ACCESO A LA FLASH
+typedef struct{ //STRUCT PARA ACCEDER A LOS REGISTROS DE CONTROL DE ACCESO A LA FLASH
 	volatile uint32_t ACR;     // FLASH ACCESS CONTROL REGISTER
 }FLASH_Type;
 
@@ -41,7 +44,7 @@ typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE CONTROL DE 
 
 //**********GPIO REGISTERS******************
 
-typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
+typedef struct{ // STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
     volatile uint32_t CRL; //PORT CONFIGURATION REGISTER LOW (0-7) (OFFSET 0x00)
     volatile uint32_t CRH; //PORT CONFIGURATION REGISTER HIGH (8-15)(OFFSET 0x04) 
     volatile const uint32_t IDR;//INPUT DATA REGISTER(OFFSET 0x08) 
@@ -58,8 +61,8 @@ typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
 
 //**********RCC REGISTERS******************
 
-typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
-	volatile uint32_t CR;      // CLOCK CONTROL REGISTER
+typedef struct{ //STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
+    volatile uint32_t CR;      // CLOCK CONTROL REGISTER
     volatile uint32_t CFGR;    // CLOCK CONFIGURATION REGISTER
     volatile uint32_t CIR;     // CLOCK INTERRUPT REGISTER
     volatile uint32_t APB2RSTR; // APB2 PERIPHERAL RESET REGISTER
@@ -77,7 +80,7 @@ typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
 
 //**********DMA1 REGISTERS******************
 
-typedef struct {
+typedef struct {		//STRUCT PARA ACCEDER A LOS REGISTROS DEL DMA1
     volatile uint32_t ISR;      // INTERRUPT STATUS REGISTER
     volatile uint32_t IFCR;     // INTERRUPT FLAG CLEAR REGISTER
     struct {
@@ -94,7 +97,7 @@ typedef struct {
 
 //**********TIM2 REGISTERS******************
 
-typedef struct {
+typedef struct {	     //STRUCT PARA ACCEDER A LOS REGISTROS DEL TIMER TIM2
     volatile uint32_t CR1;   // CONTROL REGISTER 1
     volatile uint32_t CR2;   // CONTROL REGISTER 2
     volatile uint32_t SMCR;  // SLAVE MODE CONTROL REGISTER
@@ -118,13 +121,13 @@ typedef struct {
 
 int  main(void);
 
-#define RESOLUTION 15
-#define MAXVAL  ((unsigned short) ((1 << RESOLUTION)-1))  //Max value to be represented by RESOLUTION bits
-#define MAXHALF ((unsigned short)  (1 << (RESOLUTION-1))) // Half of the max value to be represented by RESOLUTION bits
-#define TABSIZE 4096 //Amount of samples
+#define RESOLUTION 15		
+#define MAXVAL  ((unsigned short) ((1 << RESOLUTION)-1))  //Valor maximo a representar en RESOLUTION bits
+#define MAXHALF ((unsigned short)  (1 << (RESOLUTION-1))) // Valor medio del maximo valor a representar en RESOLUTION bits
+#define TABSIZE 4096 //Cantidad de muestras
 typedef unsigned short pcm_t;
 
-//Sine function samples array
+//Vector de muestras de la funcion seno
 const unsigned short sintab[TABSIZE] = {
 	16384, 16409, 16434, 16459, 16484, 16509, 16534, 16559, 16585, 16610, 16635, 16660, 16685, 16710, 16735, 16760, 
 	16786, 16811, 16836, 16861, 16886, 16911, 16936, 16961, 16987, 17012, 17037, 17062, 17087, 17112, 17137, 17162, 
@@ -382,12 +385,12 @@ const unsigned short sintab[TABSIZE] = {
 	15178, 15203, 15228, 15253, 15279, 15304, 15329, 15354, 15379, 15404, 15429, 15454, 15479, 15504, 15529, 15555, 
 	15580, 15605, 15630, 15655, 15680, 15705, 15730, 15755, 15780, 15806, 15831, 15856, 15881, 15906, 15931, 15956, 
 	15981, 16007, 16032, 16057, 16082, 16107, 16132, 16157, 16182, 16208, 16233, 16258, 16283, 16308, 16333, 16358};
-//Sine function peak values for each of 2^4 combinations.
+//Vector de valores maximos para cada una de las 2^4 combinaciones de seno posibles.
 const unsigned peak[16] = {     0,  32767,  32767,  61604,  32767,  64357,  61604,  85727,  32767,  65223,  64357,  94297,  61604,  93930,  85727, 106398};
-//Array of data to be sent for output
+//Vector de datos a ser enviados como salida
 volatile uint16_t data[TABSIZE];
 
-//Sigma Delta ADC function
+//Funcion para implementar el algoritmo de convesrion Sigma Delta
 unsigned char sosd (pcm_t pcm, int acc[2], pcm_t fdbk)
 {
 	int diff1;
@@ -413,7 +416,8 @@ unsigned char sosd (pcm_t pcm, int acc[2], pcm_t fdbk)
 int main(void)
 {
 	
-	
+	//Bloque de control y setup del clock
+
 	// PCLK code
 	RCC->CR |= (1 << 16);						// Enable HSE
 	while (!(RCC->CR & (1 << 17)));				// Wait for HSE is locked
@@ -432,7 +436,8 @@ int main(void)
 	while (!(RCC->CFGR & (0b10 << 2)));			// Wait for PLL clock to be selected
 
 	
-	// DMA code
+	// GPIO setup code
+	
 	RCC->APB2ENR |= (1 << 4);					// Enable GPIO_C clock.
 	RCC->APB2ENR |= (1 << 3);					// Enable GPIOB clock.
 	RCC->APB1ENR |= (1 << 0);					// Enable TIM2 clock.
@@ -440,8 +445,10 @@ int main(void)
 
 	GPIO_C->CRL  = 0x33333333;			// Make low GPIO_C output
 	GPIO_C->CRH = 0x33333333;			// Make high GPIO_C output
-//	GPIO_C->ODR ^= -1;
 
+	// DMA code
+	/* Code to setup de DMA1 to transfer the data vector from the memory to the GPIO peripherals,
+	will be triggered by the TIM2 by harwdare to transfer the data.*/
 	
 	DMA1->CHN[2].CNDTR = sizeof(data)/sizeof(data[0]); // Transfer size
 	DMA1->CHN[2].CMAR	= (uint32_t) data;				 // Memory source address
@@ -456,8 +463,8 @@ int main(void)
 	DMA1->CHN[2].CCR &= ~(1 << 6);		// Disable peripheral increment mode
 	DMA1->CHN[2].CCR |=  (1 << 5);		// Enable circular mode
 	DMA1->CHN[2].CCR |=  (1 << 4);		// Read from memory
-	DMA1->CHN[2].CCR |=  (1 << 2);		// Enable half transfer completed interrupt
-	DMA1->CHN[2].CCR |=  (1 << 1);		// Enable transfer completed interrupt
+	DMA1->CHN[2].CCR |=  (1 << 2);		// Enable half transfer completed interrupt ******************VER SI ELIMINAR******************
+	DMA1->CHN[2].CCR |=  (1 << 1);		// Enable transfer completed interrupt ******************VER SI ELIMINAR******************
 
 	DMA1->CHN[2].CCR |= (1 << 0);		// Enable DMA
 
@@ -469,8 +476,8 @@ int main(void)
 	TIM2->ARR   = 8-1;
 	TIM2->DIER |= (1 << 14);				// Trigger DMA request enable
 	TIM2->DIER |= (1 <<  8);				// Update DMA request enable
-//	TIM2->DIER |= (1 <<  6);				// Enable interrupt
-//	TIM2->DIER |= (1 <<  0);				// Update interrupt enable
+//	TIM2->DIER |= (1 <<  6);				// Enable interrupt ******************VER SI ELIMINAR******************
+//	TIM2->DIER |= (1 <<  0);				// Update interrupt enable ******************VER SI ELIMINAR******************
 
 	TIM2->CR1  |= (1 << 0);				// Finally enable TIM1 module
 
@@ -486,14 +493,17 @@ int main(void)
 		idr &= 0xf;
 		//idr = 0b1001;
 		if (idr_last != idr) {
-			unsigned short fdbk = 0;
+			unsigned short fdbk = 0; //Limpia fdbk si la lectura es la misma que la vez anterior
 
-			for (int i = 0; i < TABSIZE-1; i++) {
+			for (int i = 0; i < TABSIZE-1; i++) { //Recorro el vector de muestras del seno
 				uint32_t sample = 0;
 				uint8_t sd;
 
-				for (int j = 0; j < 4; j++) {
-					if (idr & (1 << j)) sample += sintab[i*(1 << j) & (TABSIZE-1)];
+				for (int j = 0; j < 4; j++) { //Recorro un vector que representa cada vector
+					/*Para obtener el seno de la frecuencia segun el boton se compara el IDR leido para saber
+					si el boton esta apretado y de ser el caso se realiza un corrimiento de bit hacia la izquierda
+					y una comparacion de tipo AND que resulta equivalente a una muestra de un seno de 1,2,4 u 8 kHz*/
+					if (idr & (1 << j)) sample += sintab[i*(1 << j) & (TABSIZE-1)]; 
 				}
 				if (peak[idr & 0xf]) {
 					sample = (sample*MAXVAL)/peak[idr & 0xf];
