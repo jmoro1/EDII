@@ -1,26 +1,19 @@
-// vi: ts=4 shiftwidth=4
-//																			  //
-// Author(s):																  //
-//	 Miguel Angel Sagreras													  //
-//																			  //
-// Copyright (C) 2021														  //
-//	  Miguel Angel Sagreras													  //
-//																			  //
-// This source file may be used and distributed without restriction provided  //
-// that this copyright statement is not removed from the file and that any	  //
-// derivative work contains  the original copyright notice and the associated //
-// disclaimer.																  //
-//																			  //
-// This source file is free software; you can redistribute it and/or modify   //
-// it under the terms of the GNU General Public License as published by the   //
-// Free Software Foundation, either version 3 of the License, or (at your	  //
-// option) any later version.												  //
-//																			  //
-// This source is distributed in the hope that it will be useful, but WITHOUT //
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or	  //
-// FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for   //
-// more details at http://www.gnu.org/licenses/.							  //
-//																			  //
+
+/*					UNIVERSIDAD NACIONAL DE SAN MARTIN			*/
+/*					ELECTRONICA DIGITAL II - TP REGULARIZADOR		*/
+/*					JAVIER LUIS MORO - JUAN MANUEL YAÑE			*/
+/*El objetivo del código es el de replicar el funcionamiento de un piano musical de 4 notas,
+consta de 4 botones que son las entradas que representan señales senoidales de 1kHz,2kHz,4kHz y 8kHz respectivamente,
+cuando se apreta cada botón la salida es una onda senoidal que es combinacion lineal de las señales de entrada,
+Desde el firmware se leen los botones mediante puertos GPIO, la transferencia de datos se hace mediante DMA
+utilizando el timer TIM2 del Cortex-M3 como trigger por hardware. La señal es convertida por un algoritmo Sigma Delta y enviado a la salida
+que puede visualizarse en un osciloscopio mediante un filtro pasa bajos con una frecuencia de corte de al menos 8kHz.
+
+Los comentarios destinados a la documentación de qué registros se acceden y de la funcionalidad general del codigo se encuentra en ingles
+ para facilitar la lectura en conjunto con el Manual de Referencia del STM32F y del Cortex-M3. Para documentacion 
+
+
+*/
 
 #define SRAM_SIZE		((uint32_t) 0x00005000)
 #define SRAM_BASE		((uint32_t) 0x20000000)
@@ -35,15 +28,15 @@ typedef unsigned char  uint8_t;
 
 typedef void(*interrupt_t)(void);
 
-typedef union {
-	uint8_t  byte[4];
-	uint16_t hword[2];
-	uint32_t word;
+typedef union {        //Type of variables for accesing registers
+	uint8_t  byte[4]; //Single bit
+	uint16_t hword[2]; // Half Word (16 bit)
+	uint32_t word; // Full word (32bit)
 } word_t;
 
 typedef word_t page[0x400/sizeof(uint32_t)];
 
-// Memory map
+// Memory map, will only use GPIOC,GPIOB,DMA1 and TIM2 registers.
 
 enum {TIM2	= 0, TIM3  = 1, TIM4  = 2 };
 enum {GPIOA = 0, GPIOB = 1, GPIOC = 2, GPIOD = 3, GPIOE = 4, GPIOF = 5 };
@@ -239,12 +232,9 @@ enum IRQs {
 };
 
 int  main(void);
-void handler_systick(void);
-void handler_dma1chn2(void);
-void handler_adc1_2(void);
-void handler_tim2(void);
-void handler_usart1(void);
 
+
+//Interrupt vector, no interrupts are used in this code
 const interrupt_t vector_table[] __attribute__ ((section(".vtab"))) = {
 	STACKINIT,												// 0x0000_0000 Stack Pointer
 	(interrupt_t) main,										// 0x0000_0004 Reset
@@ -274,7 +264,7 @@ const interrupt_t vector_table[] __attribute__ ((section(".vtab"))) = {
 	0,														// 0x0000_0064
 	0,														// 0x0000_0068
 	0,														// 0x0000_006C
-	handler_dma1chn2,										// 0x0000_0070 DMA1_CHN2
+	0,										// 0x0000_0070 DMA1_CHN2
 	0,														// 0x0000_0074
 	0,														// 0x0000_0078
 	0,														// 0x0000_007C
@@ -290,22 +280,10 @@ const interrupt_t vector_table[] __attribute__ ((section(".vtab"))) = {
 	0,														// 0x0000_00A4
 	0,														// 0x0000_00A8
 	0,														// 0x0000_00AC
-	handler_tim2,											// 0x0000_00B0 TIM2
+	0,											// 0x0000_00B0 TIM2
 };
 
-void handler_dma1chn2(void)
-{
 
-//	DEVMAP->GPIOs[GPIOC].REGs.ODR ^= -1;
-	DEVMAP->DMAs[DMA1].REGs.IFCR |= (0xf << 1);
-	CLR_IRQ(IRQ_DMA1CHN2);
-}
-
-void handler_tim2(void)
-{
-	DEVMAP->TIMs[TIM2].REGs.SR &= ~(1 << 0);
-	CLR_IRQ(IRQ_TIM2);
-}
 
 #define RESOLUTION 15
 #define MAXVAL  ((unsigned short) ((1 << RESOLUTION)-1))
@@ -573,18 +551,6 @@ const unsigned peak[16] = {     0,  32767,  32767,  61604,  32767,  64357,  6160
 volatile uint16_t data[TABSIZE];
 
 
-unsigned char fosd (pcm_t pcm, int acc[1], pcm_t fdbk) 
-{
-	int diff;
-
-	diff =   fdbk;
-	diff +=  pcm;
-	diff >>= 1;
-
-	acc[0] += diff-MAXHALF;
-	return (acc[0] > 0) ? 1 : 0;
-}
-
 unsigned char sosd (pcm_t pcm, int acc[2], pcm_t fdbk)
 {
 	int diff1;
@@ -607,23 +573,15 @@ unsigned char sosd (pcm_t pcm, int acc[2], pcm_t fdbk)
 	return (acc[1] > 0) ? 1 : 0;
 }
 
-// codigo de mas para prueba
-	#define GPIOB_BASE_ADDRESS ((uint32_t) 0x40010C00) // GPIOB BASE ADDRESS
-	#define GPIO_IDR_OFFSET ((uint32_t) 0x08) // INPUT DATA REGISTER OFFSET
-	volatile uint32_t *pIDR = (uint32_t *)(GPIOB_BASE_ADDRESS + GPIO_IDR_OFFSET);
-	#define GPIO_IDR_BIT9 ((uint32_t) 0x00000200) // BIT 5 DEL IDR
-	#define GPIO_CRL_OFFSET ((uint32_t) 0x00) // CONFIGURATION REGISTER LOW (0-7) OFFSET
-	#define GPIO_CRH_OFFSET ((uint32_t) 0x04) // CONFIGURATION REGISTER HIGH (8-15) OFFSET
-	volatile uint32_t *pCRL = (uint32_t *)(GPIOB_BASE_ADDRESS + GPIO_CRL_OFFSET);
-    volatile uint32_t *pCRH = (uint32_t *)(GPIOB_BASE_ADDRESS + GPIO_CRH_OFFSET);
-
-
-
-
 int main(void)
 {
 
-	// PCLK code
+	// Clock and PLL setup code
+	/*This fragment of code is for setting up the High Speed Clock at 72Mhz,
+	for this purpose, several steps are to be completed in order wich are specified in the STM32 Reference Manual,
+	a brief description of the process is that first we set the clock to max freq (8Mhz) and then set the PLL multiplicator to 9
+	in order to reach 72Mhz. Intermediate steps are taking such as waiting for the PLL hardware to "lock" on the desired frequency.*/
+
 	DEVMAP->RCC.REGs.CR   |= (1 << 16);						// Enable HSE
 	while (!(DEVMAP->RCC.REGs.CR & (1 << 17)));				// Wait for HSE is locked
 
@@ -641,6 +599,15 @@ int main(void)
 	while (!(DEVMAP->RCC.REGs.CFGR & (0b10 << 2)));			// Wait for PLL clock to be selected
 
 	// DMA code
+	/* Code to setup the DMA1 to transfer the data vector from the memory to the GPIO peripherals,
+	data transfer will be triggered by the TIM2 by harwdare.
+	The DMA1 setup steps were followed in the order of the STM32 Reference Manual, basically the DMA will take some critical setup values 
+	such as the address of reading and writing, if it'll be reading/writing from a memory or peripheral and the size of the transfer to take place.
+	Other settings such as circular mode,priority of the DMA transfer, specific transfer size and DMA trigger requests are made as specified
+	 in the reference manual.
+	*/
+
+
 	DEVMAP->RCC.REGs.APB2ENR |= (1 << 4);					// Enable GPIOC clock.
 	DEVMAP->RCC.REGs.APB2ENR |= (1 << 3);					// Enable GPIOB clock.
 	DEVMAP->RCC.REGs.APB1ENR |= (1 << 0);					// Enable TIM2 clock.
@@ -648,7 +615,6 @@ int main(void)
 
 	DEVMAP->GPIOs[GPIOC].REGs.CRL  = 0x33333333;			// Make low GPIOC output
 	DEVMAP->GPIOs[GPIOC].REGs.CRH  = 0x33333333;			// Make high GPIOC output
-//	DEVMAP->GPIOs[GPIOC].REGs.ODR ^= -1;
 
 	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CNDTR = sizeof(data)/sizeof(data[0]); // Transfer size
 	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CMAR	= (uint32_t) data;				 // Memory source address
@@ -663,83 +629,67 @@ int main(void)
 	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR &= ~(1 << 6);		// Disable peripheral increment mode
 	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 5);		// Enable circular mode
 	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 4);		// Read from memory
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 2);		// Enable half transfer completed interrupt
-	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |=  (1 << 1);		// Enable transfer completed interrupt
-	ENA_IRQ(IRQ_DMA1CHN2);									// Enable DMA1 Channel2 inturrupt on NVIC
 
 	DEVMAP->DMAs[DMA1].REGs.CHN[CHN2].CCR |= (1 << 0);		// Enable DMA
 
-	ENA_IRQ(IRQ_TIM2);										// Enable TIM2 interrupt on NVIC
+	//TIM2 CODE
+	/*For the timer (TIM2) some simple but critical setups are made, the prescaler and Auto Reload (ARR) are set so that all the values
+	in the SINTAB array can be represented in the 8bit DAC, in this code the count is not an integer so the output frecuencies have a
+	consistent +10% offset for each freq. e.g (1.1kHz for the 1kHz signal, 2.2kHz for the 2kHz and so on). 
+	Triying to set a integer number in the prescaler may result in a failure to the ability to represent the output given the 8bit restriction */
+
+	
 	DEVMAP->TIMs[TIM2].REGs.CR1  = 0x0000;					// Reset CR1 just in case
-//	DEVMAP->TIMs[TIM2].REGs.CR1  |= (1 << 4);				// Down counter mode
 	DEVMAP->TIMs[TIM2].REGs.PSC   = (72e3/8)/(sizeof(data)/sizeof(data[0]))-1;	// fCK_PSC / (PSC[15:0] + 1)
 	DEVMAP->TIMs[TIM2].REGs.ARR   = 8-1;
 	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 << 14);				// Trigger DMA request enable
 	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 <<  8);				// Update DMA request enable
-//	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 <<  6);				// Enable interrupt
-//	DEVMAP->TIMs[TIM2].REGs.DIER |= (1 <<  0);				// Update interrupt enable
 
 	DEVMAP->TIMs[TIM2].REGs.CR1  |= (1 << 0);				// Finally enable TIM1 module
 
 	uint16_t idr;
 	uint16_t idr_last;
 	
-	idr_last = 0b0000;
-
-
-	// Para probar boton
-
-	int volatile *APB2ENR = (int*)(0x40021000 + 0x18);				// APB2 clock enable adress
-	*APB2ENR |= (1<<3);										// Enable GPIOB clock (input for polling)
-	int volatile *crlb = (int*)(0x40010c00);						// Low Register
-	*crlb = 0x88888888;										// Input -> MODE=00 & CNF=10 |1000|1000|1000|1000|
-	int volatile *crhb = (int*)(0x40010c00 + 0x04);					// High Register
-	*crhb = 0x88888888;										// Input -> MODE=00 & CNF=10 |1000|1000|1000|1000|
-	int volatile *IDR = (int*)(0x40010c00 + 0x08);
-		//
+	idr_last = 0;
 	for(;;) {
 		int acc[2] = {0, 0};
 
-	if(*IDR &= (1<<9)){
-			idr = 0b1000;
-		}else{
-			idr = 0b0000;
-		}
-		
-		
+		idr = (DEVMAP->GPIOs[GPIOB].REGs.IDR >> 6);			// Read the IDR for the PB[9:6] pins
+		idr &= 0xf;
+		if (idr_last != idr) {
+			unsigned short fdbk = 0; //resets the fdbk for the Sigma Delta if the Input has changed
 
-		
-		//idr = (DEVMAP->GPIOs[GPIOB].REGs.IDR >> 6);			// PB[9:6]
-		//idr = 0b0011;
-		if ((idr_last != idr) & (idr!=0b0000)) {
-			unsigned short fdbk = 0;
-
-			for (int i = 0; i < TABSIZE-1; i++) {
-				uint32_t sample = 0;
+			for (int i = 0; i < TABSIZE-1; i++) { //for each sample in TABSIZE
+				uint32_t sample = 0; 
 				uint8_t sd;
 
-				for (int j = 0; j < 4; j++) {
+				for (int j = 0; j < 4; j++) { // //for each button
+				/* The SINTAB array represent a unity freq sine function, for each button pressed the sample in SINTAB is modified by a 2^j factor 
+				represented by the operation of bit displacement to the left, and the remainder of the division by the lenght of the sine array (TABSIZE)
+				is to ensure the operation is not getting out of the array. The remainder operation is implemented by doing an AND operation vs TABSIZE-1*/
 					if (idr & (1 << j)) sample += sintab[i*(1 << j) & (TABSIZE-1)];
 				}
 				if (peak[idr & 0xf]) {
-					sample = (sample*MAXVAL)/peak[idr & 0xf];
+					sample = (sample*MAXVAL)/peak[idr & 0xf]; //For each combination of buttons pressed, each sample will be normalized by its MAX VALUE in order
+					//to be in scale for correct representation and display. 
 				}
 
-				 //sd = fosd(sample, acc, fdbk);
-				sd = sosd(sample, acc, fdbk);
-				data[i] = (sd) ? (1 << 13) : 0;
-				fdbk    = (sd > 0) ? 0 : MAXVAL;
-			}
-		}
-				else{
-					for (int i = 0; i < TABSIZE-1; i++) {
-					{
-					data[i] =0;
-					}
 				
+				sd = sosd(sample, acc, fdbk); //The sample with the fdbk value is passed to the Sigma Delta
+				data[i] = (sd) ? (1 << 13) : 0; //The array 'data' (the one to be transferred via DMA1 to the ODR peripheral) is populated with the return value from the Sigma Delta
+				fdbk    = (sd > 0) ? 0 : MAXVAL; //Sigma Delta's feedback value is updated
 			}
-			idr_last = idr;
+			idr_last = idr; //idr_last var is updated
 		}
+			else{ //If actual IDR state is the same as last time, data to be transfered by DMA is cleared to always initialize with a zero output.
+						for (int i = 0; i < TABSIZE-1; i++) {
+						data[i] =0;
+						
+					
+				}
+				idr_last = idr;
+			}
+
 	}
 
 	return 0;
