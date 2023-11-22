@@ -10,8 +10,7 @@ utilizando el timer TIM2 del Cortex-M3 como trigger por hardware. La señal es c
 que puede visualizarse en un osciloscopio mediante un filtro pasa bajos con una frecuencia de corte de al menos 8kHz.
 
 Los comentarios destinados a la documentación de qué registros se acceden y de la funcionalidad general del codigo se encuentra en ingles
- para facilitar la lectura en conjunto con el Manual de Referencia del STM32F y del Cortex-M3. Para documentacion 
-
+ para facilitar la lectura en conjunto con el Manual de Referencia del STM32F y del Cortex-M3.
 
 */
 
