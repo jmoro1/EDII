@@ -18,41 +18,26 @@ typedef void(*interrupt_t)(void);
 //GPIOC AND GPIOB, CRH AND ODR BASE ADDRESS AND OFFSETS
 #define GPIOC_BASE_ADDRESS ((uint32_t) 0x40011000) // GPIOC BASE ADDRESS
 #define GPIOB_BASE_ADDRESS ((uint32_t) 0x40010C00) // GPIOB BASE ADDRESS
-
-
-typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
-    volatile uint32_t GPIO_CRL; //PORT CONFIGURATION REGISTER LOW (0-7) (OFFSET 0x00)
-    volatile uint32_t GPIO_CRH; //PORT CONFIGURATION REGISTER HIGH (8-15)(OFFSET 0x04) 
-    volatile const uint32_t GPIO_IDR;//INPUT DATA REGISTER(OFFSET 0x08) 
-    volatile uint32_t GPIO_ODR;//OUTPUT DATA REGISTER(OFFSET 0x0C)
-    volatile uint32_t GPIO_BSRR; // BIT SET/RESET REGISTER(OFFSET 0x10)
-    volatile uint32_t GPIO_BRR;//BIT RESET REGISTER(OFFSET 0x14)
-    volatile uint32_t GPIO_LCKR;//PORT CONFIGURATION LOCK REGISTER(OFFSET 0x18)
-}GPIO_Type;   
-
-//PUNTERO A LA STRUCT GPIO
-#define GPIO_C ((GPIO_Type *) GPIOC_BASE_ADDRESS)
-#define GPIO_B ((GPIO_Type *) GPIOB_BASE_ADDRESS)
-
-
 // Clock registers
 #define RCC_CR_OFFSET		0x00
 #define RCC_CFGR_OFFSET		0x04
 #define AHBENR_OFFSET		0x14
 #define APB2ENR_OFFSET		0x18
 #define APB1ENR_OFFSET		0x1C
-
+//FLASH REGISTERS
 #define FLASH_BASE			0x40022000
 #define FLASH_ACR_OFFSET	0x00
-
+//PUNTERO A LA STRUCT GPIO
+#define GPIO_C ((GPIO_Type *) GPIOC_BASE_ADDRESS)
+#define GPIO_B ((GPIO_Type *) GPIOB_BASE_ADDRESS)
 // Direccion del registro APB2ENR del RCC
 volatile uint32_t* const RCC_APB2ENR_ptr = (uint32_t *)(RCC_BASE_ADDRESS + APB2ENR_OFFSET);
 volatile uint32_t* const RCC_APB1ENR_ptr = (uint32_t *)(RCC_BASE_ADDRESS + APB1ENR_OFFSET);
 volatile uint32_t* const RCC_AHBENR_ptr = (uint32_t *)(RCC_BASE_ADDRESS + AHBENR_OFFSET);
 volatile uint32_t* const RCC_CR_ptr = (uint32_t *)(RCC_BASE_ADDRESS + RCC_CR_OFFSET);
 volatile uint32_t* const RCC_CFGR_ptr = (uint32_t *)(RCC_BASE_ADDRESS + RCC_CFGR_OFFSET);
-
 volatile uint32_t* const FLASH_ACR_ptr = (uint32_t *)(FLASH_BASE + FLASH_ACR_OFFSET);
+
 //DEFINICIONES DE BITS PARA CONFIG DEL PC13 COMO OUTPUT
 #define PC13_MODE_BIT0 20
 #define PC13_MODE_BIT1 21
@@ -79,6 +64,18 @@ volatile uint32_t* const FLASH_ACR_ptr = (uint32_t *)(FLASH_BASE + FLASH_ACR_OFF
 #define PB7_CNF_BIT1 31
 #define PB5_IDR_BIT 5
 #define PB4_IDR_BIT 4
+
+typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
+    volatile uint32_t GPIO_CRL; //PORT CONFIGURATION REGISTER LOW (0-7) (OFFSET 0x00)
+    volatile uint32_t GPIO_CRH; //PORT CONFIGURATION REGISTER HIGH (8-15)(OFFSET 0x04) 
+    volatile const uint32_t GPIO_IDR;//INPUT DATA REGISTER(OFFSET 0x08) 
+    volatile uint32_t GPIO_ODR;//OUTPUT DATA REGISTER(OFFSET 0x0C)
+    volatile uint32_t GPIO_BSRR; // BIT SET/RESET REGISTER(OFFSET 0x10)
+    volatile uint32_t GPIO_BRR;//BIT RESET REGISTER(OFFSET 0x14)
+    volatile uint32_t GPIO_LCKR;//PORT CONFIGURATION LOCK REGISTER(OFFSET 0x18)
+}GPIO_Type;   
+
+
 
 void SystemClockInit(void){
     *RCC_CR_ptr |= (1 << 16); 				// Enable HSE
@@ -135,43 +132,13 @@ int main(void)
     uint32_t pb7ODRMask = 1 << PB7_ODR_BIT;
     
     */
-
-    uint32_t pc13ODRMask = 1 << PC13_ODR_BIT; //DEFINO LA MASCARA DEL ODR CON EL BIT 13 EN 1 
-
-    /* uint32_t pb5IDRMask = 1 << PB5_IDR_BIT;
-    uint32_t pb4IDRMask = 1 << PB4_IDR_BIT;
-    uint32_t pb6ODRMask = 1 << PB6_ODR_BIT;
-    uint32_t pb7ODRMask = 1 << PB7_ODR_BIT;
- */
     uint32_t contador = 0;
 
 
 	while(1){
-        /*
-        if((SysTick->SYST_CSR & SysTickCountFlagMask))  { //VEO SI EL BIT 16 DEL CSR ESTA EN 1
-            GPIO_C->GPIO_ODR ^= pc13ODRMask; // CAMBIO EL ESTADO DEL BIT 13 DEL ODR
-        }
-        */
-
-        /*
-        // A -> B = Right
-        if( (GPIO_B->GPIO_IDR & pb5IDRMask) && (GPIO_B->GPIO_IDR !& pb4IDRMask) )  { //VEO SI EL BIT 16 (B5) DEL IDR ESTA EN 1 // Detecto señal del modulo A prendido y modulo B apagado
-            for(volatile uint32_t i=0;i<5000000;i++);// PONER CODIGO DE WAIT 500ms (ejemplo)
-            
-            if (GPIO_B->GPIO_IDR & pb4IDRMask){ // VEO SI EL MODULO B ESTA PRENDIDO
-                GPIO_C->GPIO_ODR ^= pc13ODRMask; // CAMBIO EL ESTADO DEL BIT 13 DEL ODR // Prendo LED 1
-                contador ++;// CONTADOR = CONTADOR +1
-            }
-        }
-        // B -> A = Left
-        if( (GPIO_B->GPIO_IDR & pb4IDRMask) && (GPIO_B->GPIO_IDR !& pb5IDRMask) )  { //VEO SI EL BIT 4 DEL IDR ESTA EN 1 // Detecto señal del modulo B y Modulo A apagado
-            for(volatile uint32_t i=0;i<5000000;i++);// PONER CODIGO DE WAIT 500ms (ejemplo)
-  
-            if (GPIO_B->GPIO_IDR & pb5IDRMask){ // VEO SI EL MODULO A ESTA PRENDIDO
-                GPIO_B->GPIO_ODR ^= pb6ODRMask; // CAMBIO EL ESTADO DEL BIT 6 DEL ODR // Prendo LED 2
-                contador --;// CONTADOR = CONTADOR - 1
-            }
-        }
+        
+        
+        /*  //ESTO FALTA
         if(contador >= 10){// SI CONTADOR > 10 // PRENDO LED 3
             GPIO_B->GPIO_ODR ^= pb7ODRMask;
             }
@@ -180,7 +147,7 @@ int main(void)
 
             uint32_t GPIOBIDRValue = GetIDR();
 
-    if((GPIOBIDRValue == 16))  { //VEO SI EL BIT 16 DEL CSR ESTA EN 1
+        if((GPIOBIDRValue == 16))  { //VEO SI EL BIT 16 DEL CSR ESTA EN 1
             for(volatile uint32_t i=0;i<500000;i++);
             uint32_t GPIOBIDRValue = GetIDR();
             if(GPIOBIDRValue == 0){
@@ -203,17 +170,15 @@ int main(void)
                     contador--;
                 }
             }
-        }     
+        }
+
+
     }
 
 
     
 return 0;
 }
-#define SRAM_SIZE ((uint32_t) 0x00005000)
-#define SRAM_BASE ((uint32_t) 0x20000000)
-#define STACKINIT ((interrupt_t)(SRAM_BASE+SRAM_SIZE))
-
 typedef void(*interrupt_t)(void);
 const interrupt_t vector_table[256] __attribute__ ((section(".vtab"))) = {
 	STACKINIT,												// 0x0000_0000 Stack Pointer
