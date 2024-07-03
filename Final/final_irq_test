@@ -1,0 +1,460 @@
+typedef int            int32_t;
+typedef short          int16_t;
+typedef char           int8_t;
+typedef unsigned int   uint32_t;
+typedef unsigned short uint16_t;
+typedef unsigned char  uint8_t;
+typedef void(*interrupt_t)(void);
+
+#define SRAM_SIZE ((uint32_t) 0x00005000)
+#define SRAM_BASE ((uint32_t) 0x20000000)
+#define STACKINIT ((interrupt_t)(SRAM_BASE+SRAM_SIZE))
+
+
+//RCC AND APB2ENR ADRESS AND OFFSET
+#define APB2ENR_GPIOC_ENA_BIT 4 //BIT 4 TIENE QUE ESTAR EN 1 PARA DARLE ENABLE AL CLOCK DEL GPIOC
+#define APB2ENR_GPIOB_ENA_BIT 3 //BIT 4 TIENE QUE ESTAR EN 1 PARA DARLE ENABLE AL CLOCK DEL GPIOB
+//GPIOC AND GPIOB, CRH AND ODR BASE ADDRESS AND OFFSETS
+#define PERIPH_BASE ((uint32_t) 0x40000000)
+#define GPIOC_BASE  ((uint32_t) 0x40011000) // GPIOC BASE ADDRESS
+#define GPIOB_BASE  ((uint32_t) 0x40010C00) // GPIOB BASE ADDRESS
+#define AFIO_BASE   ((uint32_t) 0x40010C00)
+#define RCC_BASE    ((uint32_t) 0x40021000) //RESET AND CLOCK CONTROL BASE ADDRESS
+#define APB1PERIPH_BASE PERIPH_BASE
+#define APB2PERIPH_BASE (uint32_t)(PERIPH_BASE + 0x10000)
+#define AHBPERIPH_BASE  (uint32_t)(PERIPH_BASE + 0x20000)
+#define FLASH_BASE  (uint32_t)( AHBPERIPH_BASE + 0x2000) // FLASH base address is 0x40022000
+#define EXTI_BASE       (APB2PERIPH_BASE + 0x0400) //  EXTI base address is 0x40010400
+#define NVIC_BASE       ((uint32_t) 0xE000E100)
+
+
+//PUNTERO A LA STRUCT GPIO
+#define GPIO_C ((GPIO_Type *) GPIOC_BASE)
+#define GPIO_B ((GPIO_Type *) GPIOB_BASE)
+#define RCC    ((RCC_Type  *)   RCC_BASE)
+#define AFIO   ((AFIO_Type *)  AFIO_BASE)
+#define FLASH  ((FLASH_Type*) FLASH_BASE)
+#define EXTI   ((EXTI_Type *)  EXTI_BASE)
+#define NVIC   ((NVIC_Type *)  NVIC_BASE)
+
+
+//DEFINICIONES DE BITS PARA CONFIG DEL PC13 COMO OUTPUT
+#define PC13_MODE_BIT0 20
+#define PC13_MODE_BIT1 21
+#define PC13_CNF_BIT0 22
+#define PC13_CNF_BIT1 23
+#define PC13_ODR_BIT 13
+#define PB6_ODR_BIT 6
+#define PB7_ODR_BIT 7
+#define PB4_MODE_BIT0 16
+#define PB4_MODE_BIT1 17
+#define PB4_CNF_BIT0 18
+#define PB4_CNF_BIT1 19 
+#define PB5_MODE_BIT0 20
+#define PB5_MODE_BIT1 21
+#define PB5_CNF_BIT0 22
+#define PB5_CNF_BIT1 23
+#define PB6_MODE_BIT0 24
+#define PB6_MODE_BIT1 25
+#define PB6_CNF_BIT0 26
+#define PB6_CNF_BIT1 27
+#define PB7_MODE_BIT0 28
+#define PB7_MODE_BIT1 29
+#define PB7_CNF_BIT0 30
+#define PB7_CNF_BIT1 31
+#define PB5_IDR_BIT 5
+#define PB4_IDR_BIT 4
+
+typedef struct{ //DECLARO UNA STRUCT PARA ACCEDER A LOS REGISTROS DE LOS GPIO
+    volatile uint32_t CRL; //PORT CONFIGURATION REGISTER LOW (0-7) (OFFSET 0x00)
+    volatile uint32_t CRH; //PORT CONFIGURATION REGISTER HIGH (8-15)(OFFSET 0x04) 
+    volatile const uint32_t IDR;//INPUT DATA REGISTER(OFFSET 0x08) 
+    volatile uint32_t ODR;//OUTPUT DATA REGISTER(OFFSET 0x0C)
+    volatile uint32_t BSRR; // BIT SET/RESET REGISTER(OFFSET 0x10)
+    volatile uint32_t BRR;//BIT RESET REGISTER(OFFSET 0x14)
+    volatile uint32_t LCKR;//PORT CONFIGURATION LOCK REGISTER(OFFSET 0x18)
+}GPIO_Type;   
+
+typedef struct{
+	volatile uint32_t CR;       /* RCC clock control register,                Address offset: 0x00 */
+	volatile uint32_t CFGR;     /* RCC clock configuration register,          Address offset: 0x04 */
+	volatile uint32_t CIR;      /* RCC clock interrupt register,              Address offset: 0x08 */
+	volatile uint32_t APB2RSTR; /* RCC APB2 peripheral reset register,        Address offset: 0x0C */
+	volatile uint32_t APB1RSTR; /* RCC APB1 peripheral reset register,        Address offset: 0x10 */
+	volatile uint32_t AHBENR;   /* RCC AHB peripheral clock enable register,  Address offset: 0x14 */
+	volatile uint32_t APB2ENR;  /* RCC APB2 peripheral clock enable register, Address offset: 0x18 */
+	volatile uint32_t APB1ENR;  /* RCC APB1 peripheral clock enable register, Address offset: 0x1C */
+	volatile uint32_t BDCR;     /* RCC backup domain control register,        Address offset: 0x20 */
+	volatile uint32_t CSR;      /* RCC control/status register,               Address offset: 0x24 */
+	volatile uint32_t AHBRSTR;  /* RCC AHB peripheral clock reset register,   Address offset: 0x28 */
+	volatile uint32_t CFGR2;    /* RCC clock configuration register 2,        Address offset: 0x2C */
+}RCC_Type;
+
+typedef struct
+{
+	uint32_t ACR;
+	uint32_t KEYR;
+	uint32_t OPTKEYR;
+	uint32_t SR;
+	uint32_t CR;
+	uint32_t AR;
+	uint32_t RESERVED;
+	uint32_t OBR;
+	uint32_t WRPR;
+}FLASH_Type;
+
+typedef struct{
+	uint32_t EVCR;      /* Address offset: 0x00 */
+	uint32_t MAPR;      /* Address offset: 0x04 */
+	uint32_t EXTICR1;   /* Address offset: 0x08 */
+	uint32_t EXTICR2;   /* Address offset: 0x0C */
+	uint32_t EXTICR3;   /* Address offset: 0x10 */
+	uint32_t EXTICR4;   /* Address offset: 0x14 */
+	uint32_t MAPR2;     /* Address offset: 0x18 */
+}AFIO_Type;
+
+typedef struct{
+	uint32_t IMR;   /* Interrupt mask register,            Address offset: 0x00 */
+	uint32_t EMR;   /* Event mask register,                Address offset: 0x04 */
+	uint32_t RTSR;  /* Rising trigger selection register,  Address offset: 0x08 */
+	uint32_t FTSR;  /* Falling trigger selection register, Address offset: 0x0C */
+	uint32_t SWIER; /* Software interrupt event register,  Address offset: 0x10 */
+	uint32_t PR;    /* Pending register,                   Address offset: 0x14 */
+}EXTI_Type;
+
+typedef struct{
+	uint32_t   ISER[8];     /* Address offset: 0x000 - 0x01C */
+	uint32_t  RES0[24];     /* Address offset: 0x020 - 0x07C */
+	uint32_t   ICER[8];     /* Address offset: 0x080 - 0x09C */
+	uint32_t  RES1[24];     /* Address offset: 0x0A0 - 0x0FC */
+	uint32_t   ISPR[8];     /* Address offset: 0x100 - 0x11C */
+	uint32_t  RES2[24];     /* Address offset: 0x120 - 0x17C */
+	uint32_t   ICPR[8];     /* Address offset: 0x180 - 0x19C */
+	uint32_t  RES3[24];     /* Address offset: 0x1A0 - 0x1FC */
+	uint32_t   IABR[8];     /* Address offset: 0x200 - 0x21C */
+	uint32_t  RES4[56];     /* Address offset: 0x220 - 0x2FC */
+	uint8_t   IPR[240];     /* Address offset: 0x300 - 0x3EC */
+	uint32_t RES5[644];     /* Address offset: 0x3F0 - 0xEFC */
+	uint32_t       STIR;    /* Address offset:         0xF00 */
+}NVIC_Type;
+
+typedef enum IRQn{
+	NonMaskableInt_IRQn         = -14,    /* 2 Non Maskable Interrupt                             */
+	MemoryManagement_IRQn       = -12,    /* 4 Cortex-M3 Memory Management Interrupt              */
+	BusFault_IRQn               = -11,    /* 5 Cortex-M3 Bus Fault Interrupt                      */
+	UsageFault_IRQn             = -10,    /* 6 Cortex-M3 Usage Fault Interrupt                    */
+	SVCall_IRQn                 = -5,     /* 11 Cortex-M3 SV Call Interrupt                       */
+	DebugMonitor_IRQn           = -4,     /* 12 Cortex-M3 Debug Monitor Interrupt                 */
+	PendSV_IRQn                 = -2,     /* 14 Cortex-M3 Pend SV Interrupt                       */
+	SysTick_IRQn                = -1,     /* 15 Cortex-M3 System Tick Interrupt                   */
+	WWDG_IRQn                   = 0,      /* Window WatchDog Interrupt                            */
+	PVD_IRQn                    = 1,      /* PVD through EXTI Line detection Interrupt            */
+	TAMPER_IRQn                 = 2,      /* Tamper Interrupt                                     */
+	RTC_IRQn                    = 3,      /* RTC global Interrupt                                 */
+	FLASH_IRQn                  = 4,      /* FLASH global Interrupt                               */
+	RCC_IRQn                    = 5,      /* RCC global Interrupt                                 */
+	EXTI0_IRQn                  = 6,      /* EXTI Line0 Interrupt                                 */
+	EXTI1_IRQn                  = 7,      /* EXTI Line1 Interrupt                                 */
+	EXTI2_IRQn                  = 8,      /* EXTI Line2 Interrupt                                 */
+	EXTI3_IRQn                  = 9,      /* EXTI Line3 Interrupt                                 */
+	EXTI4_IRQn                  = 10,     /* EXTI Line4 Interrupt                                 */
+	DMA1_Channel1_IRQn          = 11,     /* DMA1 Channel 1 global Interrupt                      */
+	DMA1_Channel2_IRQn          = 12,     /* DMA1 Channel 2 global Interrupt                      */
+	DMA1_Channel3_IRQn          = 13,     /* DMA1 Channel 3 global Interrupt                      */
+	DMA1_Channel4_IRQn          = 14,     /* DMA1 Channel 4 global Interrupt                      */
+	DMA1_Channel5_IRQn          = 15,     /* DMA1 Channel 5 global Interrupt                      */
+	DMA1_Channel6_IRQn          = 16,     /* DMA1 Channel 6 global Interrupt                      */
+	DMA1_Channel7_IRQn          = 17,     /* DMA1 Channel 7 global Interrupt                      */
+	ADC1_2_IRQn                 = 18,     /* ADC1 and ADC2 global Interrupt                       */
+	CAN1_TX_IRQn                = 19,     /* USB Device High Priority or CAN1 TX Interrupts       */
+	CAN1_RX0_IRQn               = 20,     /* USB Device Low Priority or CAN1 RX0 Interrupts       */
+	CAN1_RX1_IRQn               = 21,     /* CAN1 RX1 Interrupt                                   */
+	CAN1_SCE_IRQn               = 22,     /* CAN1 SCE Interrupt                                   */
+	EXTI9_5_IRQn                = 23,     /* External Line[9:5] Interrupts                        */
+	TIM1_BRK_IRQn               = 24,     /* TIM1 Break Interrupt                                 */
+	TIM1_UP_IRQn                = 25,     /* TIM1 Update Interrupt                                */
+	TIM1_TRG_COM_IRQn           = 26,     /* TIM1 Trigger and Commutation Interrupt               */
+	TIM1_CC_IRQn                = 27,     /* TIM1 Capture Compare Interrupt                       */
+	TIM2_IRQn                   = 28,     /* TIM2 global Interrupt                                */
+	TIM3_IRQn                   = 29,     /* TIM3 global Interrupt                                */
+	TIM4_IRQn                   = 30,     /* TIM4 global Interrupt                                */
+	I2C1_EV_IRQn                = 31,     /* I2C1 Event Interrupt                                 */
+	I2C1_ER_IRQn                = 32,     /* I2C1 Error Interrupt                                 */
+	I2C2_EV_IRQn                = 33,     /* I2C2 Event Interrupt                                 */
+	I2C2_ER_IRQn                = 34,     /* I2C2 Error Interrupt                                 */
+	SPI1_IRQn                   = 35,     /* SPI1 global Interrupt                                */
+	SPI2_IRQn                   = 36,     /* SPI2 global Interrupt                                */
+	USART1_IRQn                 = 37,     /* USART1 global Interrupt                              */
+	USART2_IRQn                 = 38,     /* USART2 global Interrupt                              */
+	USART3_IRQn                 = 39,     /* USART3 global Interrupt                              */
+	EXTI15_10_IRQn              = 40,     /* External Line[15:10] Interrupts                      */
+	RTCAlarm_IRQn               = 41,     /* RTC Alarm through EXTI Line Interrupt                */
+	OTG_FS_WKUP_IRQn            = 42,     /* USB OTG FS WakeUp from suspend through EXTI Line Int */
+	TIM5_IRQn                   = 50,     /* TIM5 global Interrupt                                */
+	SPI3_IRQn                   = 51,     /* SPI3 global Interrupt                                */
+	UART4_IRQn                  = 52,     /* UART4 global Interrupt                               */
+	UART5_IRQn                  = 53,     /* UART5 global Interrupt                               */
+	TIM6_IRQn                   = 54,     /* TIM6 global Interrupt                                */
+	TIM7_IRQn                   = 55,     /* TIM7 global Interrupt                                */
+	DMA2_Channel1_IRQn          = 56,     /* DMA2 Channel 1 global Interrupt                      */
+	DMA2_Channel2_IRQn          = 57,     /* DMA2 Channel 2 global Interrupt                      */
+	DMA2_Channel3_IRQn          = 58,     /* DMA2 Channel 3 global Interrupt                      */
+	DMA2_Channel4_IRQn          = 59,     /* DMA2 Channel 4 global Interrupt                      */
+	DMA2_Channel5_IRQn          = 60,     /* DMA2 Channel 5 global Interrupt                      */
+	ETH_IRQn                    = 61,     /* Ethernet global Interrupt                            */
+	ETH_WKUP_IRQn               = 62,     /* Ethernet Wakeup through EXTI line Interrupt          */
+	CAN2_TX_IRQn                = 63,     /* CAN2 TX Interrupt                                    */
+	CAN2_RX0_IRQn               = 64,     /* CAN2 RX0 Interrupt                                   */
+	CAN2_RX1_IRQn               = 65,     /* CAN2 RX1 Interrupt                                   */
+	CAN2_SCE_IRQn               = 66,     /* CAN2 SCE Interrupt                                   */
+	OTG_FS_IRQn                 = 67      /* USB OTG FS global Interrupt                          */
+}IRQn_type;
+
+
+void SystemClockInit(void){
+    RCC->CR |= (1 << 16); 				// Enable HSE
+	while (!(RCC->CR & (1 << 17)));		// Wait for HSE is locked
+
+	RCC->CR &= ~(1 << 24); 				// Disable PLL
+	RCC->CFGR |= (0b0111 << 18);        // Set PLLMULL to 9. Set PLL output clock to 72 Mhz
+	RCC->CFGR |= (1 << 16);             // Select HSE as the PLL source clock
+	RCC->CR |= (1 << 24);               // Enable PLL
+	while (!(RCC->CR & (1 << 25)));		// Wait for PLL to lock
+	
+	/*FLASH ACR*/
+	FLASH->ACR |= (0b010 << 0);			// Set FLASH WAIT STATE to 2
+	RCC->CFGR |= (0b0000 << 4);         // Set AHB HPRE division to 1. Set AHB clock to 72 Mhz
+	RCC->CFGR |= (0b0010 << 14);         // Set AHB HPRE division to 1. Set AHB clock to 72 Mhz
+	RCC->CFGR |= (0b100 << 8);          // Set APB1 PPRE1 division to 2. Set AHB clock to 36 Mhz
+	RCC->CFGR |= (0b10 << 0);			// Select PLL clock as the system clock
+	while (!(RCC->CFGR & (0b10 << 2)));	// Wait for PLL clock to be selected
+}
+
+
+void GPIOInit(void){
+
+    RCC->APB2ENR |= (0x1 << APB2ENR_GPIOC_ENA_BIT); //DOY ENABLE AL CLOCK DEL GPIOC
+    RCC->APB2ENR |= (0x1 << APB2ENR_GPIOB_ENA_BIT); //DOY ENABLE AL CLOCK DEL GPIOC
+    //SETEO EL CRH DEL PC13 COMO 00 GENERAL PURPOSE OUTPUT Y OUTPUT CON 01 MODO OUTPUT MAX 10MHz
+    GPIO_C->CRH |= ((0x1 << PC13_MODE_BIT0) | (0x0 << PC13_MODE_BIT1) | (0x0 << PC13_CNF_BIT0) | (0x0 << PC13_CNF_BIT1));
+    GPIO_B->CRL |= ((0x1 << PB6_MODE_BIT0) | (0x0 << PB6_MODE_BIT1) | (0x0 << PB6_CNF_BIT0) | (0x0 << PB6_CNF_BIT1)); // LED 2
+    GPIO_B->CRL |= ((0x1 << PB7_MODE_BIT0) | (0x0 << PB7_MODE_BIT1) | (0x0 << PB7_CNF_BIT0) | (0x0 << PB7_CNF_BIT1)); // LED 3
+    //SETEO EL CRL DEL PB5 COMO - MODE 00  INPUT - CNF 10 INPUT WITH PUSH-PULL
+    GPIO_B->CRL |= ((0x0 << PB5_MODE_BIT0) | (0x0 << PB5_MODE_BIT1) | (0x0 << PB5_CNF_BIT0) | (0x1 << PB5_CNF_BIT1)); // MODULO A
+    GPIO_B->CRL |= ((0x0 << PB4_MODE_BIT0) | (0x0 << PB4_MODE_BIT1) | (0x0 << PB4_CNF_BIT0) | (0x1 << PB4_CNF_BIT1)); // MODULO B
+
+    GPIO_C->ODR |= (0x1 << PC13_ODR_BIT); // INICIALIZO EL LED PC13 APAGADO
+}
+
+/*
+ * Enable given interrupt
+ *
+ * 	 Each ISER {0-7} holds 32 interrupts. Thus take mod32 of the given interrupt
+ *   to choose the ISER number (ISER[0] for IRQn 0-31, and ISER[1] for IRQn 32-63 ..)
+ *   Then, enable the given bit on that register based on the remainder of the mod.
+ */
+void enable_interrupt(void)
+{
+	NVIC->ISER[0] |= (1 << 10); // Habilitar interrupción para EXTI4
+    NVIC->ISER[0] |= (1 << 23); // Habilitar interrupción para EXTI9_5
+}
+
+/*
+ * Disable given interrupt
+ */
+void disable_interrupt(IRQn_type IRQn)
+{
+	NVIC->ICER[((uint32_t)(IRQn) >> 5)] = (1 << ((uint32_t)(IRQn) & 0x1F));
+}
+
+volatile uint32_t IRModuleA_Flag = 0;
+volatile uint32_t IRModuleB_Flag = 0;
+
+void IRModuleA_IRQHandler(void){
+	IRModuleA_Flag = 1;
+	if(EXTI->PR & (1 << 4)){
+		EXTI->PR |= (1 << 4);
+	}
+}
+
+void IRModuleB_IRQHandler(void){
+	IRModuleB_Flag = 1;
+	if(EXTI->PR & (1 << 5)){
+		EXTI->PR |= (1 << 5);
+	}
+}
+
+
+uint32_t GetIDR(void){
+    uint32_t IDR = GPIO_B->IDR;
+    return IDR;
+}
+int main(void)
+{
+    SystemClockInit();
+    GPIOInit();
+
+	// Since we will use Alternate Function (EXTI) we need to enable the
+	//   clock for that module. Bit0 in RCC APB2ENR register
+	RCC->APB2ENR |= (1 << 0); // AFIO Clock enable
+
+	AFIO->EXTICR2 |= 0x0011; //EXTI4 AND EXTI5 ENABLE FOR PORTS 4-5
+	EXTI->FTSR |= (1 << 4); //FALLING TRIGGER DETECT ENABLE
+	EXTI->FTSR |= (1 << 5);	//FALLING TRIGGER DETECT ENABLE
+	// We mask the used external interrupt numbers.
+	EXTI->IMR |= (1 << 4);    // Mask EXTI4
+	EXTI->IMR |= (1 << 5);    // Mask EXTI5
+	// Set Prioirity for each interrupt request
+	// STM32F107 supports 4-bit priority level (highest 4-bits are implemented)
+	NVIC->IPR[EXTI4_IRQn] = 0x10; //EXTI4 Priority level 1
+	NVIC->IPR[EXTI9_5_IRQn] = 0x20; // EXTI5 Priority level 2
+	enable_interrupt();
+    /*
+    uint32_t SysTickCountFlagMask = 1 << CSR_COUNTFLAG_BIT;//DEFINO LA MASCARA DEL CSR CON EL BIT 16 (COUNTFLAG) EN 1
+    uint32_t pb5IDRMask = 1 << PB5_IDR_BIT;
+    uint32_t pb4IDRMask = 1 << PB4_IDR_BIT;
+    uint32_t pb6ODRMask = 1 << PB6_ODR_BIT;
+    uint32_t pb7ODRMask = 1 << PB7_ODR_BIT;
+    
+    */
+    uint32_t contador = 0;
+
+
+	while(1){
+        
+        
+        /*  //ESTO FALTA
+        if(contador >= 10){// SI CONTADOR > 10 // PRENDO LED 3
+            GPIO_B->ODR ^= pb7ODRMask;
+            }
+
+            */
+
+            uint32_t GPIOBIDRValue = GetIDR();
+
+        /* if((GPIOBIDRValue == 16))  { //VEO SI EL BIT 16 DEL CSR ESTA EN 1
+                for(volatile uint32_t i=0;i<500000;i++);
+                GPIOBIDRValue = GetIDR();
+            if(GPIOBIDRValue == 0){
+                GPIO_C->ODR = (0x0 << PC13_ODR_BIT); // CAMBIO EL ESTADO DEL BIT 13 DEL ODR
+                for(volatile uint32_t i=0;i<5000000;i++);
+                GPIO_C->ODR = (0x1 << PC13_ODR_BIT);
+                contador++;
+            }
+
+        }
+
+        if((GPIOBIDRValue == 32))  { //VEO SI EL BIT 16 DEL CSR ESTA EN 1
+                for(volatile uint32_t i=0;i<500000;i++);
+                GPIOBIDRValue = GetIDR();
+                    if(GPIOBIDRValue == 0){
+                    GPIO_C->ODR = (0x0 << PC13_ODR_BIT); // CAMBIO EL ESTADO DEL BIT 13 DEL ODR
+                    for(volatile uint32_t i=0;i<5000000;i++);
+                    GPIO_C->ODR = (0x1 << PC13_ODR_BIT);
+                        if(contador > 0){
+                            contador--;
+                        }
+                }
+        } */
+
+	   if((IRModuleB_Flag == 1)){
+			GPIO_C->ODR = (0x0 << PC13_ODR_BIT); // CAMBIO EL ESTADO DEL BIT 13 DEL ODR
+            for(volatile uint32_t i=0;i<5000000;i++);
+			GPIO_C->ODR = (0x1 << PC13_ODR_BIT);
+	   }
+	   
+
+
+    }
+
+
+   
+    return 0;
+}
+typedef void(*interrupt_t)(void);
+const interrupt_t vector_table[256] __attribute__ ((section(".vtab"))) = {
+	STACKINIT,												// 0x0000_0000 Stack Pointer
+	(interrupt_t) main,										// 0x0000_0004 Reset
+	0,                              /* 0x008 Non maskable interrupt          */
+	0,                              /* 0x00C HardFault                       */
+	0,                              /* 0x010 Memory Management               */
+	0,                              /* 0x014 BusFault                        */
+	0,                              /* 0x018 UsageFault                      */
+	0,                              /* 0x01C Reserved                        */
+	0,                              /* 0x020 Reserved                        */
+	0,                              /* 0x024 Reserved                        */
+	0,                              /* 0x028 Reserved                        */
+	0,                              /* 0x02C System service call             */
+	0,                              /* 0x030 Debug Monitor                   */
+	0,                              /* 0x034 Reserved                        */
+	0,                              /* 0x038 PendSV                          */
+	0,                              /* 0x03C System tick timer               */
+	0,                              /* 0x040 Window watchdog                 */
+	0,                              /* 0x044 PVD through EXTI Line detection */
+	0,                              /* 0x048 Tamper                          */
+	0,                              /* 0x04C RTC global                      */
+	0,                              /* 0x050 FLASH global                    */
+	0,                              /* 0x054 RCC global                      */
+	0,//(uint32_t *) button_handler,    /* 0x058 EXTI Line0                      */
+	0,//(uint32_t *) button_handler,    /* 0x05C EXTI Line1                      */
+	0,                              /* 0x060 EXTI Line2                      */
+	0,                              /* 0x064 EXTI Line3                      */
+	(interrupt_t) IRModuleA_IRQHandler,                              /* 0x068 EXTI Line4                      */
+	0,                              /* 0x06C DMA1_Ch1                        */
+	0,                              /* 0x070 DMA1_Ch2                        */
+	0,                              /* 0x074 DMA1_Ch3                        */
+	0,                              /* 0x078 DMA1_Ch4                        */
+	0,                              /* 0x07C DMA1_Ch5                        */
+	0,                              /* 0x080 DMA1_Ch6                        */
+	0,                              /* 0x084 DMA1_Ch7                        */
+	0,                              /* 0x088 ADC1 and ADC2 global            */
+	0,                              /* 0x08C CAN1_TX                         */
+	0,                              /* 0x090 CAN1_RX0                        */
+	0,                              /* 0x094 CAN1_RX1                        */
+	0,                              /* 0x098 CAN1_SCE                        */
+	(interrupt_t) IRModuleB_IRQHandler,                              /* 0x09C EXTI Lines 9:5                  */
+	0,                              /* 0x0A0 TIM1 Break                      */
+	0,                              /* 0x0A4 TIM1 Update                     */
+	0,                              /* 0x0A8 TIM1 Trigger and Communication  */
+	0,                              /* 0x0AC TIM1 Capture Compare            */
+	0,                              /* 0x0B0 TIM2                            */
+	0,                              /* 0x0B4 TIM3                            */
+	0,                              /* 0x0B8 TIM4                            */
+	0,                              /* 0x0BC I2C1 event                      */
+	0,                              /* 0x0C0 I2C1 error                      */
+	0,                              /* 0x0C4 I2C2 event                      */
+	0,                              /* 0x0C8 I2C2 error                      */
+	0,                              /* 0x0CC SPI1                            */
+	0,                              /* 0x0D0 SPI2                            */
+	0,                              /* 0x0D4 USART1                          */
+	0,                              /* 0x0D8 USART2                          */
+	0,                              /* 0x0DC USART3                          */
+	0,                              /* 0x0E0 EXTI Lines 15:10                */
+	0,                              /* 0x0E4 RTC alarm through EXTI line     */
+	0,                              /* 49  USB OTG FS Wakeup through EXTI  */
+	0,                              /* -   Reserved                        */
+	0,                              /* -   Reserved                        */
+	0,                              /* -   Reserved                        */
+	0,                              /* -   Reserved                        */
+	0,                              /* -   Reserved                        */
+	0,                              /* -   Reserved                        */
+	0,                              /* -   Reserved                        */
+	0,                              /* 57  TIM5                            */
+	0,                              /* 58  SPI3                            */
+	0,                              /* 59  USART4                          */
+	0,                              /* 60  USART5                          */
+	0,                              /* 61  TIM6                            */
+	0,                              /* 62  TIM7                            */
+	0,                              /* 63  DMA2_Ch1                        */
+	0,                              /* 64  DMA2_Ch2                        */
+	0,                              /* 65  DMA2_Ch3                        */
+	0,                              /* 66  DMA2_Ch4                        */
+	0,                              /* 67  DMA2_Ch5                        */
+	0,                              /* 68  Ethernet                        */
+	0,                              /* 69  Ethernet wakeup                 */
+	0,                              /* 70  CAN2_TX                         */
+	0,                              /* 71  CAN2_RX0                        */
+	0,                              /* 72  CAN2_RX1                        */
+	0,                              /* 73  CAN2_SCE                        */
+	0,                              /* 74  USB OTG FS                      */
+};
