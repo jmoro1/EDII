@@ -87,8 +87,7 @@ int main(void)
 
 
 	while(1){
-        
-    }
+
 return 0;
 }
 #define SRAM_SIZE ((uint32_t) 0x00005000)
