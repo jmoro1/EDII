@@ -2,4 +2,4 @@ Bare metal code for a stm32 BluePill firmware for controlling IR sensors and to 
 
 
 
-![statechart.drawio](/assets/images/statechart.drawio.png)
+![statechart.drawio](/Final/statechart.drawio.png)
